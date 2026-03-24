@@ -1,0 +1,43 @@
+# Semantic Transition Map (Virtual PCD Coordinates)
+# Unit: Meters (m)
+# Scale Assumption: 1 JSON grid unit ≈ 1.5 meters
+
+nodes:
+  # 메인 세로 복도 (x축 약 3.0m 지점 라인)
+  hall_203: [3.05, 2.98]
+  hall_204: [3.12, 6.15]
+  hall_205: [2.98, 9.20]
+  hall_208: [3.05, 18.45]
+  hall_210: [3.10, 24.60]
+  hall_top: [3.02, 33.15]
+
+  # 가로 복도 (y축 9.2m 및 24.6m 라인)
+  hall_205_mid: [12.15, 9.25]
+  hall_205_right: [27.30, 9.18]
+  hall_210_mid: [12.45, 24.65]
+
+  # 중앙 홀 및 이동 경로 (1층으로 내려가는 구간)
+  path_slope: [12.20, 5.80]
+  path_stairs: [18.15, 6.10]
+  central_hall: [15.10, 3.15]
+
+edges:
+  # 1. 메인 세로 복도 연결
+  - {start: "hall_203", end: "hall_204"}
+  - {start: "hall_204", end: "hall_205"}
+  - {start: "hall_205", end: "hall_208"}
+  - {start: "hall_208", end: "hall_210"}
+  - {start: "hall_210", end: "hall_top"}
+
+  # 2. 학군단 및 엘리베이터 가로 복도
+  - {start: "hall_205", end: "hall_205_mid"}
+  - {start: "hall_205_mid", end: "hall_205_right"}
+
+  # 3. 회의실 구역 가로 복도
+  - {start: "hall_210", end: "hall_210_mid"}
+
+  # 4. 중앙 홀 연결
+  - {start: "hall_205_mid", end: "path_slope"}
+  - {start: "path_slope", end: "central_hall"}
+  - {start: "hall_205_mid", end: "path_stairs"}
+  - {start: "path_stairs", end: "central_hall"}
