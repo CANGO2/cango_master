@@ -37,7 +37,7 @@
     { "name": "210호", "type": "강의실", "feature_coords": [1, 16], "connected_node": "hall_210" },
     { "name": "ROTC학군단", "type": "사무실", "feature_coords": [18, 7], "connected_node": "hall_205_right" },
 
-    /* 회의실 구역 (누락 복구) */
+    /* 회의실 구역 */
     { "name": "회의실1", "type": "회의실", "feature_coords": [8, 17], "connected_node": "hall_210_mid" },
     { "name": "회의실2", "type": "회의실", "feature_coords": [10, 15], "connected_node": "hall_210_mid" },
     { "name": "회의실3", "type": "회의실", "feature_coords": [14, 17], "connected_node": "hall_210_mid" },

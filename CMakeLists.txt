@@ -11,6 +11,11 @@ find_package(rclcpp REQUIRED)
 find_package(cango_msgs REQUIRED)
 find_package(std_msgs REQUIRED)
 
+find_package(nav_msgs REQUIRED)
+find_package(nav2_msgs REQUIRED)
+find_package(tf2_ros REQUIRED)
+find_package(tf2_geometry_msgs REQUIRED)
+
 set(TARGET_NAME cango_master)
 
 add_executable(${TARGET_NAME} src/cango_master.cpp)
@@ -26,6 +31,10 @@ target_link_libraries(${TARGET_NAME} PUBLIC
   ${geometry_msgs_TARGETS}
   ${std_msgs_TARGETS}
   ${cango_msgs_TARGETS}
+  ${nav_msgs_TARGETS}
+  ${nav2_msgs_TARGETS}
+  tf2_ros::tf2_ros
+  tf2_geometry_msgs::tf2_geometry_msgs
 )
 
 install(TARGETS ${TARGET_NAME}

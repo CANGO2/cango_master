@@ -8,12 +8,14 @@ static inline T clip(T now_val, T min_val, T max_val) {
   return max_val < now_val ? max_val : (min_val > now_val ? min_val : now_val);
 }
 
-// enum task_name {
-//   None, operation, status, sound, llm, vision
-// };
-// enum status {
-//   None, wait, moving, arrived, returning
-// };
+struct Point { double x; double y; };
+
+enum task_name {
+  None, operation, status, sound, llm, vision
+};
+enum status {
+  None, wait, moving, arrived, returning
+};
 
 
 class calc_coordinate {
@@ -26,19 +28,16 @@ public:
     struct EdgeInfo { std::string start, end, label; };
 
     void load_semantic_map(const std::string& file_path);
-
+    void serch_node(std::string id, Point &pt);
+    
     std::vector<NodeInfo> map_nodes_;
     std::vector<EdgeInfo> map_edges_;
 
-    // 현재위치(PCD) -> Semantic ID 변환 
-    void pcd2id(double rx, double ry, std::string &id_A, std::string &id_B); 
-    
-    // Semantic ID -> PCD 좌표 변환 
-    void id2pcd(std::string id, double &x, double &y);
+    void pcd2id(Point pt, std::string &id_A, std::string &id_B); 
+    void id2pcd(std::string id, Point &pt);
 
 private:
-    // 내부적으로 ID를 통해 노드 정보를 찾는 헬퍼 함수
-    NodeInfo get_node(const std::string& id) {
+NodeInfo get_node(const std::string& id) {
         for (const auto& node : map_nodes_) {
             if (node.id == id) return node;
         }
