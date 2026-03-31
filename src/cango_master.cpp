@@ -1,6 +1,7 @@
+#include "cango_master.hpp"
+
 #include <chrono>
 #include <functional>
-#include <include/cango_master.hpp>
 
 namespace cango_master {
 
@@ -17,7 +18,6 @@ CangoMaster::CangoMaster() : Node("cango_master") {
     RCLCPP_WARN(this->get_logger(),
                 "Semantic config path is empty! Check your launch file.");
   }
-
   sequence_manager =
       std::make_unique<SequenceManager>(this, semantic_config_path);
 }
@@ -30,14 +30,15 @@ void CangoMaster::setup() {
   llm_subscription = this->create_subscription<cango_msgs::msg::LlmRequest>(
       "~/llm2master", 10,
       std::bind(&CangoMaster::LlmCB, this, std::placeholders::_1));
-
+  sound_publisher = this->create_publisher<cango_msgs::msg::SoundRequest>(
+      "~/master2sound", 10);
   master_publisher =
       this->create_publisher<cango_msgs::msg::TaskStatus>("~/task_status", 10);
   llm_publisher =
       this->create_publisher<cango_msgs::msg::LlmRequest>("~/master2llm", 10);
   navi_publisher =
       this->create_publisher<cango_msgs::msg::Navigation>("~/master2navi", 10);
-  control_pub = this->create_publisher<cango_msgs::msg::RobotControl>(
+  control_publisher = this->create_publisher<cango_msgs::msg::RobotControl>(
       "~/master2control", 10);
   timer_ =
       this->create_wall_timer(std::chrono::duration<double>(1.0),
@@ -48,7 +49,7 @@ void CangoMaster::reset() {}
 void CangoMaster::run() {
   StateChanger();
 
-  if (is_moter_enable) {
+  if (motor_enable) {
     control_pub();
   }
 
@@ -56,15 +57,15 @@ void CangoMaster::run() {
 }
 void CangoMaster::StateChanger() {
   if (ask_map_available) {
-    sequence_manager.search_path(waypoint_list);
-    sequence_manager.create_full_path(sequence_manager.path_list, pcl_location);
+    sequence_manager->search_path(waypoint_list);
+    sequence_manager->create_full_path(sequence_manager->path_list, pcl_location);
     // 나온 path가 가능한 길이라고 뜨면,
     // map_available = true;
   }
 
   if (is_moving) {
-    sequence_manager.check_sound_trigger(pcl_location);
-    if (sequence_manager.sound_trigger != 0) {
+    sequence_manager->check_sound_trigger(pcl_location);
+    if (sequence_manager->sound_trigger != 0) {
       sound_pub();
     }
   }
@@ -97,7 +98,7 @@ void CangoMaster::LlmCB(
   }
   if (msg->user_start) {
     is_user_interrupted = false;
-    is_motor_enable = true;
+    motor_enable = true;
   }
   if (msg->map_search) {
     ask_map_available = true;
@@ -114,7 +115,7 @@ void CangoMaster::task_pub() {}
 void CangoMaster::sound_pub() {
   cango_msgs::msg::SoundRequest sound_request;
   sound_request.request = true;
-  sound_request.ordered_num = sequence_manager.sound_trigger;
+  sound_request.ordered_num = sequence_manager->sound_trigger;
 
   sound_publisher->publish(sound_request);
 }
@@ -131,17 +132,17 @@ void CangoMaster::llm_pub() {
   }
   //나중에 아예 길이 불가능할경우 3넣는거 만들어야함
 
-  if () llm_publisher->publish(llm_request);
+  llm_publisher->publish(llm_request);
 }
 
 void CangoMaster::control_pub() {
   // 나중에 조종이 들어가면 rot_in_place 여부에 따라 조종변화
 
   if (motor_enable) {
-    robot_control.lineer_speed = robot_cmd.lin_vel;
+    robot_control.linear_speed = robot_cmd.lin_vel;
     robot_control.ang_speed = robot_cmd.ang_vel;
   } else {
-    robot_control.lineer_speed = 0.0;
+    robot_control.linear_speed = 0.0;
     robot_control.ang_speed = 0.0;
   }
   control_publisher->publish(robot_control);

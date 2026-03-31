@@ -9,6 +9,11 @@
 #include <tools.hpp>
 #include <vector>
 
+#include "cango_msgs/msg/llm_request.hpp"
+#include "cango_msgs/msg/robot_control.hpp"
+#include "cango_msgs/msg/robot_status.hpp"
+#include "cango_msgs/msg/sound_request.hpp"
+
 namespace cango_master {
 
 class CangoMaster : public rclcpp::Node {
@@ -20,7 +25,7 @@ class CangoMaster : public rclcpp::Node {
   void setup();
   void run();
   void reset();
-
+  void StateChanger();
   ////callback functions ///////
 
   void NaviCB(const cango_msgs::msg::Navigation::ConstSharedPtr& msg);
@@ -37,7 +42,7 @@ class CangoMaster : public rclcpp::Node {
   bool map_available = false;
   bool is_request = false;
   bool is_moving = false;
-  bool is_user_interrupted = false; 
+  bool is_user_interrupted = false;
   bool motor_enable = false;
 
   cango_msgs::msg::TaskStatus now_status;
@@ -49,23 +54,25 @@ class CangoMaster : public rclcpp::Node {
   calc_coordinate coordinate_converter;
   robot_command robot_cmd;
   pd_controller pd_lin, pd_ang;
-  SequenceManager sequence_manager;
+  std::unique_ptr<SequenceManager> sequence_manager;
 
   ///////////////navigation//////////////////
   std::string goalpoint;
   std::vector<std::string>
-      waypoint_list;        //목적지 리스트, sequence manager에서 관리
-  Point pcl_location;       //현재 위치, sequence manager
-  std::string semantic_location1, semantic_location2;  // semantic map에서의 위치
-
+      waypoint_list;   //목적지 리스트, sequence manager에서 관리
+  Point pcl_location;  //현재 위치, sequence manager
+  std::string semantic_location1,
+      semantic_location2;  // semantic map에서의 위치
 
  private:
   rclcpp::Subscription<cango_msgs::msg::Navigation>::SharedPtr
       navi_subscription;
+  rclcpp::Subscription<cango_msgs::msg::LlmRequest>::SharedPtr llm_subscription;
   rclcpp::Publisher<cango_msgs::msg::TaskStatus>::SharedPtr master_publisher;
   rclcpp::Publisher<cango_msgs::msg::Navigation>::SharedPtr navi_publisher;
   rclcpp::Publisher<cango_msgs::msg::LlmRequest>::SharedPtr llm_publisher;
   rclcpp::Publisher<cango_msgs::msg::RobotControl>::SharedPtr control_publisher;
+  rclcpp::Publisher<cango_msgs::msg::SoundRequest>::SharedPtr sound_publisher;
   rclcpp::TimerBase::SharedPtr timer_;
 };
 

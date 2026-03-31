@@ -6,20 +6,11 @@ SequenceManager::SequenceManager(rclcpp::Node* node,
                                  const std::string& yaml_path)
     : node_(node) {
   coordinate_converter.load_semantic_map(yaml_path);
-  tf_buffer_ = std::make_unique<tf2_ros::Buffer>(node_->get_clock());
-  tf_listener_ = std::make_shared<tf2_ros::TransformListener>(*tf_buffer_);
 }
-
-SequenceManager::~SequenceManager() {}
 
 void SequenceManager::reset() {}
 
-void SequenceManager::change_status(enum task_name task_num, int& act) {
-  if task_num
-    == task_name::LLM { now_status.use_llm = act; }
-}
-
-SequenceManager::update_status() { prev_status = update_status; }
+void SequenceManager::update_status() { prev_status = new_status; }
 
 void SequenceManager::search_path(std::vector<std::string> waypoint_list) {
   path_list.clear();
@@ -41,7 +32,10 @@ geometry_msgs::msg::PoseStamped SequenceManager::get_current_pose(
     current_pose.pose.position.y = current_location.y;
     current_pose.pose.position.z = 0.0;
     current_pose.pose.orientation.w = 1.0;
-  } catch (const tf2::TransformException& ex) {
+    if(current_location.x == 0.0 && current_location.y == 0.0) {
+      throw std::runtime_error("Current location is (0,0), likely an error.");
+    }
+  } catch (const std::exception& ex) {
     RCLCPP_WARN(node_->get_logger(), "cannot find robot_location: %s",
                 ex.what());
   }
@@ -49,62 +43,74 @@ geometry_msgs::msg::PoseStamped SequenceManager::get_current_pose(
   return current_pose;
 }
 
-void SequenceManager::create_full_path(const std::vector<Point> path_list,
+void SequenceManager::create_full_path(const std::vector<Point> &path_list,
                                        const Point& current_location) {
-  if (path_list.size() < 2) {
-    RCLCPP_WARN(node_->get_logger(), "need more than 2 path points");
+  if (path_list.size() < 1) { 
+    RCLCPP_WARN(node_->get_logger(), "Need at least 1 waypoint to create path.");
     return;
   }
 
   while (!planner_service_client_->wait_for_service(std::chrono::seconds(1))) {
     if (!rclcpp::ok()) return;
-    RCLCPP_INFO(node_->get_logger(), "waitting for Planner service...");
+    RCLCPP_INFO(node_->get_logger(), "Waiting for Planner service (GetPlan)...");
   }
 
   last_generated_path_.poses.clear();
   last_generated_path_.header.frame_id = "map";
   last_generated_path_.header.stamp = node_->now();
 
-  geometry_msgs::msg::PoseStamped current_pose =
-      get_current_pose(current_location);
-
-  // make waypoints list
   std::vector<geometry_msgs::msg::PoseStamped> all_points;
+  geometry_msgs::msg::PoseStamped current_pose = get_current_pose(current_location);
   all_points.push_back(current_pose);
+  
   for (const auto& pt : path_list) {
     geometry_msgs::msg::PoseStamped p;
     p.header.frame_id = "map";
+    p.header.stamp = node_->now();
     p.pose.position.x = pt.x;
     p.pose.position.y = pt.y;
+    p.pose.position.z = 0.0;
     p.pose.orientation.w = 1.0;
     all_points.push_back(p);
   }
 
   for (size_t i = 0; i < all_points.size() - 1; ++i) {
-    auto request = std::make_shared<nav2_msgs::srv::GetPlan::Request>();
+    auto request = std::make_shared<nav_msgs::srv::GetPlan::Request>();
     request->start = all_points[i];
     request->goal = all_points[i + 1];
-    request->planner_id = "GridBased";
+    request->tolerance = 0.1f; // 필요시 허용 오차 설정
 
-    // 서비스 호출 (결과 대기)
-    auto result = planner_service_client_->async_send_request(request);
-    if (rclcpp::spin_until_future_complete(node_, result) ==
+    // 서비스 호출 (비동기 요청 후 대기)
+    auto result_future = planner_service_client_->async_send_request(request);
+    
+    // node_가 rclcpp::Node* 일 경우 get_node_base_interface() 사용
+    if (rclcpp::spin_until_future_complete(node_->get_node_base_interface(), result_future) ==
         rclcpp::FutureReturnCode::SUCCESS) {
-      auto response = result.get();
-      // 경로 합치기 (중복 점 제거 로직 포함)
-      if (!last_generated_path_.poses.empty() &&
-          !response->path.poses.empty()) {
-        last_generated_path_.poses.pop_back();
+      
+      auto response = result_future.get();
+
+      if (response && !response->plan.poses.empty()) {
+        // 이전 경로의 마지막 점과 새 경로의 시작점이 겹치면 마지막 점 제거
+        if (!last_generated_path_.poses.empty()) {
+            last_generated_path_.poses.pop_back();
+        }
+        
+        last_generated_path_.poses.insert(last_generated_path_.poses.end(),
+                                          response->plan.poses.begin(),
+                                          response->plan.poses.end());
+      } else {
+        RCLCPP_ERROR(node_->get_logger(), "Failed to get plan between point %zu and %zu", i, i+1);
       }
-      last_generated_path_.poses.insert(last_generated_path_.poses.end(),
-                                        response->path.poses.begin(),
-                                        response->path.poses.end());
+    } else {
+      RCLCPP_ERROR(node_->get_logger(), "Service call failed for plan segment %zu", i);
     }
   }
 
-  RCLCPP_INFO(node_->get_logger(), "created_full_path with %zu poses",
+  RCLCPP_INFO(node_->get_logger(), "Successfully created full path with %zu poses",
               last_generated_path_.poses.size());
 }
+
+
 
 void SequenceManager::check_sound_trigger(const Point& current_location) {
   for (size_t i = 0; i < path_list.size(); ++i) {

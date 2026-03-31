@@ -2,45 +2,25 @@
 
 cango_master
 
-- [Container Images](#container-images)
-- [cango_master](#cango_master)
-
-
-### Container Images
-
-| Description | Image:Tag | Default Command |
-| --- | --- | -- |
-|  |  |  |
+- [cango\_master](#cango_master)
+  - [`cango_master`](#cango_master-1)
+    - [prerequisites](#prerequisites)
+    - [Parameters](#parameters)
 
 
 ## `cango_master`
 
-### Subscribed Topics
 
-| Topic | Type | Description |
-| --- | --- | --- |
-|  |  |  |
+### prerequisites
 
-### Published Topics
+'''
+sudo apt update
+sudo apt install ros-humble-nav2-msgs
+'''
 
-| Topic | Type | Description |
-| --- | --- | --- |
-|  |  |  |
-
-### Services
-
-| Service | Type | Description |
-| --- | --- | --- |
-|  |  |  |
-
-### Actions
-
-| Action | Type | Description |
-| --- | --- | --- |
-|  |  |  |
 
 ### Parameters
 
 | Parameter | Type | Default | Description |
-| --- | --- | --- | --- |
-|  |  |  |  |
+| --------- | ---- | ------- | ----------- |
+|           |      |         |             |

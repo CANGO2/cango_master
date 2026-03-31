@@ -1,7 +1,12 @@
+#ifndef TOOLS_HPP_
+#define TOOLS_HPP_
+
 #include <string>
 #include <algorithm>
 #include <cmath>
 #include <yaml-cpp/yaml.h>
+
+namespace cango_master {
 
 template <class T>
 static inline T clip(T now_val, T min_val, T max_val) {
@@ -9,14 +14,6 @@ static inline T clip(T now_val, T min_val, T max_val) {
 }
 
 struct Point { double x; double y; };
-
-enum task_name {
-  None, operation, status, sound, llm, vision
-};
-enum status {
-  None, wait, moving, arrived, returning
-};
-
 
 class calc_coordinate {
 public:
@@ -65,3 +62,6 @@ class robot_command {
   double lin_vel = 0.0, ang_vel = 0.0;
 };
  
+
+}  // namespace cango_master
+#endif  // TOOLS_HPP_

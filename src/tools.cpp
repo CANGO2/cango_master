@@ -1,5 +1,5 @@
 #include <tools.hpp>
-
+#include "rclcpp/rclcpp.hpp"
 namespace cango_master {
 void calc_coordinate::load_semantic_map(const std::string& file_path) {
   try {
@@ -22,7 +22,8 @@ void calc_coordinate::load_semantic_map(const std::string& file_path) {
       }
     }
   } catch (const std::exception& e) {
-    std::cerr << "Error loading YAML: " << e.what() << std::endl;
+    RCLCPP_ERROR(rclcpp::get_logger("calc_coordinate"),
+                 "fail to load semantic map: %s", e.what());
   }
 }
 
@@ -31,10 +32,10 @@ void calc_coordinate::id2pcd(std::string id, Point& pt) {
                          [&id](const NodeInfo& node) { return node.id == id; });
 
   if (it != map_nodes_.end()) {
-    x = it->x;
-    y = it->y;
+    pt.x = it->x;
+    pt.y = it->y;
   } else {
-    std::cerr << "Cannot find node: " << id << std::endl;
+    RCLCPP_ERROR(rclcpp::get_logger("calc_coordinate"), "Cannot find node: %s", id.c_str());
   }
 }
 
