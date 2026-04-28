@@ -49,7 +49,7 @@ void CangoMaster::setup() {
   teleop_publisher = this->create_publisher<geometry_msgs::msg::Twist>(
       "/collision_cmd", 10);
   timer_ =
-      this->create_wall_timer(std::chrono::duration<double>(1.0),
+      this->create_wall_timer(std::chrono::duration<double>(0.1),
                               std::bind(&CangoMaster::timerCallback, this));
 }
 void CangoMaster::timerCallback() { run(); }
@@ -63,6 +63,11 @@ void CangoMaster::run() {
 }
 
 void CangoMaster::StateChanger() {
+  
+  //디버깅용!!!
+  motor_enable = true;
+
+  
   if (!auto_mode) {
     ask_map_available = false;
     motor_enable = true;
@@ -122,20 +127,22 @@ void CangoMaster::NaviCB(
 }
 void CangoMaster::HandCB(
     const cango_msgs::msg::RobotControl::ConstSharedPtr& msg) {
-  if(msg->robot_up == 1){
-    auto_mode = false;
-    robot_up = false;
-    return;
-  }
-  else if(msg->robot_up == false){
-    auto_mode = false;
-    robot_up = true;
-  }
-  if(msg->mode == 1) {
-    auto_mode = false;
-  } else {
-    auto_mode = true;
-  }
+      //테스트용 제거
+  // if(msg->robot_up == 1){
+  //   auto_mode = false;
+  //   robot_up = false;
+  //   return;
+  // }
+  // else if(msg->robot_up == false){
+  //   auto_mode = false;
+  //   robot_up = true;
+  // }
+  // if(msg->mode == 1) {
+  //   auto_mode = false;
+  // } else {
+  //   auto_mode = true;
+  // }
+  auto_mode = false;
   robot_cmd.linear_speed = msg->linear_speed;
   robot_cmd.side_speed = msg->side_speed;
   robot_cmd.ang_speed = msg->ang_speed;
@@ -224,9 +231,10 @@ void CangoMaster::control_pub() {
       robot_control.linear_speed = robot_cmd.linear_speed;
       robot_control.side_speed = robot_cmd.side_speed;
       robot_control.ang_speed = robot_cmd.ang_speed;
+      std::cout<<"aaaaaaaaaaaaaaa"<<std::endl;
     }
   } else {
-    sequence_manager->cancel_assisted_teleop();
+    //sequence_manager->cancel_assisted_teleop();
     robot_control.linear_speed = 0.0;
     robot_control.side_speed = 0.0;
     robot_control.ang_speed = 0.0;
