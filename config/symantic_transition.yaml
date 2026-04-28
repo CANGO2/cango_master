@@ -1,43 +1,69 @@
 # Semantic Transition Map (Virtual PCD Coordinates)
 # Unit: Meters (m)
-# Scale Assumption: 1 JSON grid unit ≈ 1.5 meters
 
 nodes:
-  # 메인 세로 복도 (x축 약 3.0m 지점 라인)
-  hall_203: [3.05, 2.98]
-  hall_204: [3.12, 6.15]
-  hall_205: [2.98, 9.20]
-  hall_208: [3.05, 18.45]
-  hall_210: [3.10, 24.60]
-  hall_top: [3.02, 33.15]
+  # ===== 하단 메인 복도 (row 13 라인) =====
+  hall_317: [-18.04, 15.04]
+  hall_318: [-18.2, 16.34]
+  hall_319: [-15.49, 15.95]
+  hall_320: [-2.86, 16.60]
+  hall_321: [1.07, 16.60] #복도321호
+  hall_322: [3.11, 16.63] #바람 위원진
+  hall_right_top_end: [-27.59, 15.91] #복도 오위끝
+  hall_left_top_end: [-30.58, 0.13] #복도 왼위끝
+  hall_left_bottom_end: [20.03, -0.43] #복도 왼아끝
 
-  # 가로 복도 (y축 9.2m 및 24.6m 라인)
-  hall_205_mid: [12.15, 9.25]
-  hall_205_right: [27.30, 9.18]
-  hall_210_mid: [12.45, 24.65]
+  # ===== 상단 및 중간 주요 포인트 =====
+  hall_산학협력단: [1.51, 0.00]
+  hall_화장실_좌: [-8.62, 3.86]
+  hall_화장실_우: [-9.27, 12.50]
+  hall_엘리베이터_좌: [-1.45, 7.18]
+  hall_엘리베이터_우: [-1.55, 9.47]
+  hall_계단_좌: [1.05, 3.31]
+  hall_계단_우: [0.88, 13.89]
 
-  # 중앙 홀 및 이동 경로 (1층으로 내려가는 구간)
-  path_slope: [12.20, 5.80]
-  path_stairs: [18.15, 6.10]
-  central_hall: [15.10, 3.15]
+  # ===== 공터 중심 =====
+  hall_공터_center: [-18.7, 8.26] #공터 중심점
+
+  # ===== 복도 교차점 =====
+  hall_left_top: [-17.76, 1.52] #공터교챠
+  hall_left_mid: [-8.43, 0.37] # 화장실교챠
+  hall_left_bottom: [0.62, 0.20] # 엘베교챠
+
+  hall_right_top: [-18.04, 15.04] #공터 교차
+  hall_right_mid: [-9.38, 16.00] #화장실 교차
+  hall_right_bottom: [0.15, 16.34]  #엘베 교차
 
 edges:
-  # 1. 메인 세로 복도 연결
-  - {start: "hall_203", end: "hall_204"}
-  - {start: "hall_204", end: "hall_205"}
-  - {start: "hall_205", end: "hall_208"}
-  - {start: "hall_208", end: "hall_210"}
-  - {start: "hall_210", end: "hall_top"}
+  # ===== 세로 좌측 연결 =====
+  
+  - {start: "hall_left_top_end", end: "hall_left_top"}
+  - {start: "hall_left_top", end: "hall_left_mid"}
+  - {start: "hall_left_mid", end: "hall_left_bottom"}
+  - {start: "hall_left_bottom", end: "hall_산학협력단"}
+  - {start: "hall_산학협력단", end: "hall_left_bottom_end"}
 
-  # 2. 학군단 및 엘리베이터 가로 복도
-  - {start: "hall_205", end: "hall_205_mid"}
-  - {start: "hall_205_mid", end: "hall_205_right"}
+  # ===== 세로 우측 연결 =====
+  - {start: "hall_right_top_end", end: "hall_317"}
+  - {start: "hall_317", end: "hall_318"}
+  - {start: "hall_318", end: "hall_319"}
+  - {start: "hall_319", end: "hall_right_mid"}
+  - {start: "hall_right_mid", end: "hall_320"}
+  - {start: "hall_320", end: "hall_321"}
+  - {start: "hall_321", end: "hall_322"}
 
-  # 3. 회의실 구역 가로 복도
-  - {start: "hall_210", end: "hall_210_mid"}
+  # ===== 가로 연결 =====
+  - {start: "hall_left_top", end: "hall_공터_center"}
+  - {start: "hall_공터_center", end: "hall_right_mid"}
+  - {start: "hall_right_mid", end: "hall_right_top"}
+  - {start: "hall_right_top", end: "hall_318"}
 
-  # 4. 중앙 홀 연결
-  - {start: "hall_205_mid", end: "path_slope"}
-  - {start: "path_slope", end: "central_hall"}
-  - {start: "hall_205_mid", end: "path_stairs"}
-  - {start: "path_stairs", end: "central_hall"}
+  - {start: "hall_left_mid", end: "hall_화장실_좌"}
+  - {start: "hall_right_mid", end: "hall_화장실_우"}
+
+  - {start: "hall_left_bottom", end: "hall_계단_좌"}
+  - {start: "hall_계단_좌", end: "hall_엘리베이터_좌"}
+  - {start: "hall_엘리베이터_좌", end: "hall_엘리베이터_우"}
+  - {start: "hall_엘리베이터_우", end: "hall_계단_우"}
+  - {start: "hall_계단_우", end: "hall_right_bottom"}
+  - {start: "hall_right_bottom", end: "hall_321"}

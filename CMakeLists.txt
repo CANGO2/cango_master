@@ -47,7 +47,7 @@ ament_target_dependencies(${TARGET_NAME}
 )
 
 target_link_libraries(${TARGET_NAME}
-  yaml-cpp
+  ${YAML_CPP_LIBRARIES}
 )
 
 install(TARGETS ${TARGET_NAME}

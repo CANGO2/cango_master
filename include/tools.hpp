@@ -59,7 +59,7 @@ class pd_controller {
 
 class robot_command {
  public:
-  double lin_vel = 0.0, ang_vel = 0.0;
+  double linear_speed = 0.0, side_speed = 0.0, ang_speed = 0.0;
 };
  
 
