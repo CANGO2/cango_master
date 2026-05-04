@@ -6,6 +6,9 @@ SequenceManager::SequenceManager(rclcpp::Node* node,
                                  const std::string& yaml_path)
     : node_(node) {
   coordinate_converter.load_semantic_map(yaml_path);
+  planner_service_client_ = node_->create_client<nav_msgs::srv::GetPlan>("get_plan");
+  navigation_action_client_ = rclcpp_action::create_client<FollowPath>(node_, "follow_path");
+  assisted_teleop_client_ = rclcpp_action::create_client<nav2_msgs::action::AssistedTeleop>(node_, "assisted_teleop");
 }
 
 void SequenceManager::reset() {}
@@ -119,8 +122,7 @@ bool SequenceManager::create_full_path(const std::vector<Point>& path_list,
   return true;
 }
 
-bool SequenceManager::path_tracking(Point current_location,
-                                    const std::vector<Point>& path_list) {
+bool SequenceManager::path_tracking(const std::vector<Point>& path_list) {
   if (path_list.empty()) {
     RCLCPP_WARN(node_->get_logger(), "Path list is empty.");
     return false;
@@ -159,11 +161,10 @@ bool SequenceManager::path_tracking(Point current_location,
 
   return true;  // 요청 성공
 }
-void SequenceManager::send_assisted_teleop() {
+bool SequenceManager::send_assisted_teleop() {
     if (!assisted_teleop_client_->action_server_is_ready()) {
-        return;
+        return false;
     }
-    
     auto goal_msg = nav2_msgs::action::AssistedTeleop::Goal();  
     
     // 1. 에러 발생했던 필드 제거 및 시간 설정 (예: 0.5초 동안 활성화)
@@ -171,6 +172,7 @@ void SequenceManager::send_assisted_teleop() {
 
     // 3. 액션 전송
     assisted_teleop_client_->async_send_goal(goal_msg);
+    return true;
 }
 
 void SequenceManager::cancel_assisted_teleop() {

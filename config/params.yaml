@@ -1,0 +1,4 @@
+cango_master: 
+  ros__parameters:
+    sound_trigger_distance: 1.0 # 사운드 트리거 거리 (m)
+    semantic_config_path: "/home/lsk/colcon_ws/src/cango_master/config/semantic_transition.yaml"

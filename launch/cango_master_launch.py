@@ -11,8 +11,8 @@ def generate_launch_description():
 
     # 1. 파일 경로 설정 (고정값으로 사용하거나 필요시 수정)
     map_config = os.path.join(pkg_dir, "maps", "map.yaml")
+    master_params = os.path.join(pkg_dir, "config", "params.yaml")
     nav2_params = os.path.join(pkg_dir, "config", "nav2_params.yaml")
-    semantic_config = os.path.join(pkg_dir, "config", "semantic_transition.yaml")
     
     # 2. Nav2 공식 브링업 포함
     nav2_stack = IncludeLaunchDescription(
@@ -22,8 +22,8 @@ def generate_launch_description():
         launch_arguments={
             "map": map_config,
             "params_file": nav2_params,
+            "master_params_file": master_params,
             "autostart": "true",
-            "semantic_config": semantic_config,
         }.items(),
     )
 
@@ -34,6 +34,7 @@ def generate_launch_description():
         name="cango_master",
         output="screen",
         emulate_tty=True,
+        parameters=[master_params],
     )
 
     return LaunchDescription([

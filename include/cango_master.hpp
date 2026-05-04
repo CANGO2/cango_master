@@ -8,7 +8,6 @@
 #include <string>
 #include <tools.hpp>
 #include <vector>
-
 #include "geometry_msgs/msg/twist.hpp"
 #include "cango_msgs/msg/llm_request.hpp"
 #include "cango_msgs/msg/robot_control.hpp"
@@ -25,15 +24,13 @@ class CangoMaster : public rclcpp::Node {
   bool robot_up = false; // 로봇이 서야한다는 명령
   bool robot_stand = false; // 로봇이 서있는 상태인지 여부
 
-
  private:
   void setup();
   void run();
   void reset();
   void StateChanger();
-  void collision_avoid();
+  bool collision_avoid();
   ////callback functions ///////
-
   void NaviCB(const cango_msgs::msg::Navigation::ConstSharedPtr& msg);
   void LlmCB(const cango_msgs::msg::LlmRequest::ConstSharedPtr& msg);
   void HandCB(const cango_msgs::msg::RobotControl::ConstSharedPtr& msg);
@@ -48,7 +45,7 @@ class CangoMaster : public rclcpp::Node {
 
   bool ask_map_available = false;
   bool map_available = false;
-  bool is_moving = false;
+  bool is_moving = false; //경로 추적하면서 사운드 트리거하려고
   bool is_request = false;
   bool is_user_interrupted = false;
   bool motor_enable = false;
@@ -87,6 +84,10 @@ class CangoMaster : public rclcpp::Node {
   rclcpp::Publisher<cango_msgs::msg::SoundRequest>::SharedPtr sound_publisher;
   rclcpp::TimerBase::SharedPtr timer_;
   rclcpp::Subscription<geometry_msgs::msg::Twist>::SharedPtr nav2_cmd_subscription;
+
+  /////yaml parameter//////
+    double sound_trigger_distance;
+    std::string semantic_config_path;
 };
 
 }  // namespace cango_master

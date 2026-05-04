@@ -16,9 +16,8 @@ void calc_coordinate::load_semantic_map(const std::string& file_path) {
     // 연결성 가져오기
     if (config["edges"]) {
       for (auto const& e : config["edges"]) {
-        map_edges_.push_back({e["start"].as<std::string>(),
-                              e["end"].as<std::string>(),
-                              e["label"].as<std::string>()});
+        map_edges_.push_back({e["from"].as<std::string>(),
+                              e["to"].as<std::string>()});
       }
     }
   } catch (const std::exception& e) {

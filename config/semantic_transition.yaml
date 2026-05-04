@@ -37,33 +37,33 @@ nodes:
 edges:
   # ===== 세로 좌측 연결 =====
   
-  - {start: "hall_left_top_end", end: "hall_left_top"}
-  - {start: "hall_left_top", end: "hall_left_mid"}
-  - {start: "hall_left_mid", end: "hall_left_bottom"}
-  - {start: "hall_left_bottom", end: "hall_산학협력단"}
-  - {start: "hall_산학협력단", end: "hall_left_bottom_end"}
+  - {from: "hall_left_top_end", to: "hall_left_top"}
+  - {from: "hall_left_top", to: "hall_left_mid"}
+  - {from: "hall_left_mid", to: "hall_left_bottom"}
+  - {from: "hall_left_bottom", to: "hall_산학협력단"}
+  - {from: "hall_산학협력단", to: "hall_left_bottom_end"}
 
   # ===== 세로 우측 연결 =====
-  - {start: "hall_right_top_end", end: "hall_317"}
-  - {start: "hall_317", end: "hall_318"}
-  - {start: "hall_318", end: "hall_319"}
-  - {start: "hall_319", end: "hall_right_mid"}
-  - {start: "hall_right_mid", end: "hall_320"}
-  - {start: "hall_320", end: "hall_321"}
-  - {start: "hall_321", end: "hall_322"}
+  - {from: "hall_right_top_end", to: "hall_317"}
+  - {from: "hall_317", to: "hall_318"}
+  - {from: "hall_318", to: "hall_319"}
+  - {from: "hall_319", to: "hall_right_mid"}
+  - {from: "hall_right_mid", to: "hall_320"}
+  - {from: "hall_320", to: "hall_321"}
+  - {from: "hall_321", to: "hall_322"}
 
   # ===== 가로 연결 =====
-  - {start: "hall_left_top", end: "hall_공터_center"}
-  - {start: "hall_공터_center", end: "hall_right_mid"}
-  - {start: "hall_right_mid", end: "hall_right_top"}
-  - {start: "hall_right_top", end: "hall_318"}
+  - {from: "hall_left_top", to: "hall_공터_center"}
+  - {from: "hall_공터_center", to: "hall_right_mid"}
+  - {from: "hall_right_mid", to: "hall_right_top"}
+  - {from: "hall_right_top", to: "hall_318"}
 
-  - {start: "hall_left_mid", end: "hall_화장실_좌"}
-  - {start: "hall_right_mid", end: "hall_화장실_우"}
+  - {from: "hall_left_mid", to: "hall_화장실_좌"}
+  - {from: "hall_right_mid", to: "hall_화장실_우"}
 
-  - {start: "hall_left_bottom", end: "hall_계단_좌"}
-  - {start: "hall_계단_좌", end: "hall_엘리베이터_좌"}
-  - {start: "hall_엘리베이터_좌", end: "hall_엘리베이터_우"}
-  - {start: "hall_엘리베이터_우", end: "hall_계단_우"}
-  - {start: "hall_계단_우", end: "hall_right_bottom"}
-  - {start: "hall_right_bottom", end: "hall_321"}
+  - {from: "hall_left_bottom", to: "hall_계단_좌"}
+  - {from: "hall_계단_좌", to: "hall_엘리베이터_좌"}
+  - {from: "hall_엘리베이터_좌", to: "hall_엘리베이터_우"}
+  - {from: "hall_엘리베이터_우", to: "hall_계단_우"}
+  - {from: "hall_계단_우", to: "hall_right_bottom"}
+  - {from: "hall_right_bottom", to: "hall_321"}

@@ -1,70 +1,87 @@
 {
   "nodes": [
     { "id": "hall_317", "type": "corridor", "coords": [2, 13] },
-    { "id": "hall_318", "type": "corridor", "coords": [4, 14] },
-    { "id": "hall_319", "type": "corridor", "coords": [6, 14] },
-    { "id": "hall_320", "type": "corridor", "coords": [8, 14] },
-    { "id": "hall_321", "type": "corridor", "coords": [10, 14] },
-    { "id": "hall_322", "type": "corridor", "coords": [10, 13] },
+    { "id": "hall_318", "type": "corridor", "coords": [4, 13] },
+    { "id": "hall_319", "type": "corridor", "coords": [6, 13] },
+    { "id": "hall_320", "type": "corridor", "coords": [8, 13] },
+    { "id": "hall_321", "type": "corridor", "coords": [10, 13] },
+    { "id": "hall_322", "type": "corridor", "coords": [11, 13] },
 
-    { "id": "hall_right_top_end", "type": "endpoint", "coords": [1, 14] },
-    { "id": "hall_left_top_end", "type": "endpoint", "coords": [1, 2] },
-    { "id": "hall_left_bottom_end", "type": "endpoint", "coords": [12, 1] },
+    { "id": "hall_right_top_end", "type": "corridor", "coords": [1, 13] },
+    { "id": "hall_left_top_end", "type": "corridor", "coords": [1, 2] },
+    { "id": "hall_left_bottom_end", "type": "corridor", "coords": [11, 2] },
 
-    { "id": "hall_산학협력단", "type": "room", "coords": [10, 1] },
+    { "id": "hall_산학협력단", "type": "room", "coords": [10, 2] },
 
-    { "id": "hall_화장실_좌", "type": "facility", "coords": [6, 4] },
-    { "id": "hall_화장실_우", "type": "facility", "coords": [6, 11] },
+    { "id": "hall_화장실_좌", "type": "facility", "coords": [7, 4] },
+    { "id": "hall_화장실_우", "type": "facility", "coords": [7, 11] },
 
-    { "id": "hall_엘리베이터_좌", "type": "facility", "coords": [9, 7] },
-    { "id": "hall_엘리베이터_우", "type": "facility", "coords": [9, 9] },
+    { "id": "hall_엘리베이터_좌", "type": "facility", "coords": [10, 6] },
+    { "id": "hall_엘리베이터_우", "type": "facility", "coords": [10, 9] },
 
-    { "id": "hall_계단_좌", "type": "facility", "coords": [11, 4] },
-    { "id": "hall_계단_우", "type": "facility", "coords": [11, 11] },
+    { "id": "hall_계단_좌", "type": "facility", "coords": [10, 4] },
+    { "id": "hall_계단_우", "type": "facility", "coords": [10, 11] },
 
     {
       "id": "hall_공터_center",
       "type": "open_space",
-      "range": [[3, 6], [5, 10]]
+      "range": [[3, 6], [5, 9]]
     },
 
-    { "id": "hall_left_top", "type": "intersection", "coords": [4, 3] },
-    { "id": "hall_left_mid", "type": "intersection", "coords": [6, 3] },
-    { "id": "hall_left_bottom", "type": "intersection", "coords": [10, 3] },
+    { "id": "hall_left_top", "type": "corridor", "coords": [4, 2], "description": "intersection" },
+    { "id": "hall_left_mid", "type": "corridor", "coords": [7, 2], "description": "intersection" },
+    { "id": "hall_left_bottom", "type": "corridor", "coords": [10, 2], "description": "intersection" },
 
-    { "id": "hall_right_top", "type": "intersection", "coords": [4, 13] },
-    { "id": "hall_right_mid", "type": "intersection", "coords": [7, 12] },
-    { "id": "hall_right_bottom", "type": "intersection", "coords": [10, 12] }
+    { "id": "hall_right_top", "type": "corridor", "coords": [4, 13], "description": "intersection" },
+    { "id": "hall_right_mid", "type": "corridor", "coords": [7, 13], "description": "intersection" },
+    { "id": "hall_right_bottom", "type": "corridor", "coords": [10, 13], "description": "intersection" }
   ],
 
   "edges": [
-    { "start": "hall_left_top_end", "end": "hall_left_top" },
-    { "start": "hall_left_top", "end": "hall_left_mid" },
-    { "start": "hall_left_mid", "end": "hall_left_bottom" },
-    { "start": "hall_left_bottom", "end": "hall_산학협력단" },
-    { "start": "hall_산학협력단", "end": "hall_left_bottom_end" },
+    { "from": "hall_left_top_end", "to": "hall_left_top" },
+    { "from": "hall_left_top", "to": "hall_left_mid" },
+    { "from": "hall_left_mid", "to": "hall_left_bottom" },
+    { "from": "hall_left_bottom", "to": "hall_산학협력단" },
+    { "from": "hall_산학협력단", "to": "hall_left_bottom_end" },
 
-    { "start": "hall_right_top_end", "end": "hall_317" },
-    { "start": "hall_317", "end": "hall_318" },
-    { "start": "hall_318", "end": "hall_319" },
-    { "start": "hall_319", "end": "hall_right_mid" },
-    { "start": "hall_right_mid", "end": "hall_320" },
-    { "start": "hall_320", "end": "hall_321" },
-    { "start": "hall_321", "end": "hall_322" },
+    { "from": "hall_right_top_end", "to": "hall_317" },
+    { "from": "hall_317", "to": "hall_318" },
+    { "from": "hall_318", "to": "hall_319" },
+    { "from": "hall_319", "to": "hall_right_mid" },
+    { "from": "hall_right_mid", "to": "hall_320" },
+    { "from": "hall_320", "to": "hall_321" },
+    { "from": "hall_321", "to": "hall_322" },
 
-    { "start": "hall_left_top", "end": "hall_공터_center" },
-    { "start": "hall_공터_center", "end": "hall_right_mid" },
-    { "start": "hall_right_mid", "end": "hall_right_top" },
-    { "start": "hall_right_top", "end": "hall_318" },
+    { "from": "hall_left_top", "to": "hall_공터_center" },
+    { "from": "hall_공터_center", "to": "hall_right_mid" },
+    { "from": "hall_right_mid", "to": "hall_right_top" },
+    { "from": "hall_right_top", "to": "hall_318" },
 
-    { "start": "hall_left_mid", "end": "hall_화장실_좌" },
-    { "start": "hall_right_mid", "end": "hall_화장실_우" },
+    { "from": "hall_left_mid", "to": "hall_화장실_좌" },
+    { "from": "hall_right_mid", "to": "hall_화장실_우" },
 
-    { "start": "hall_left_bottom", "end": "hall_계단_좌" },
-    { "start": "hall_계단_좌", "end": "hall_엘리베이터_좌" },
-    { "start": "hall_엘리베이터_좌", "end": "hall_엘리베이터_우" },
-    { "start": "hall_엘리베이터_우", "end": "hall_계단_우" },
-    { "start": "hall_계단_우", "end": "hall_right_bottom" },
-    { "start": "hall_right_bottom", "end": "hall_321" }
+    { "from": "hall_left_bottom", "to": "hall_계단_좌" },
+    { "from": "hall_계단_좌", "to": "hall_엘리베이터_좌" },
+    { "from": "hall_엘리베이터_좌", "to": "hall_엘리베이터_우" },
+    { "from": "hall_엘리베이터_우", "to": "hall_계단_우" },
+    { "from": "hall_계단_우", "to": "hall_right_bottom" },
+    { "from": "hall_right_bottom", "to": "hall_321" }
+  ],
+
+  "features": [
+    {"name": "317호", "types": "room", "coords": [2, 12], "connected_node": "hall_317"},
+    {"name": "318호", "types": "room", "coords": [4, 14], "connected_node": "hall_318"},
+    {"name": "319호", "types": "room", "coords": [6, 14], "connected_node": "hall_319"},
+    {"name": "320호", "types": "room", "coords": [8, 14], "connected_node": "hall_320"},
+    {"name": "321호", "types": "room", "coords": [10, 14], "connected_node": "hall_321"},
+    {"name": "322호", "types": "room", "coords": [11, 14], "connected_node": "hall_322"},
+    {"name": "산학협력단", "types": "room", "coords": [10, 1], "connected_node": "hall_산학협력단"},
+
+    {"name": "화장실_좌", "types": "restroom", "coords": [7, 4], "connected_node": "hall_화장실_좌"},
+    {"name": "화장실_우", "types": "restroom", "coords": [7, 11], "connected_node": "hall_화장실_우"},
+    {"name": "엘리베이터_좌", "types": "elevator", "coords": [9, 6], "connected_node": "hall_엘리베이터_좌"},
+    {"name": "엘리베이터_우", "types": "elevator", "coords": [9, 9], "connected_node": "hall_엘리베이터_우"},
+    {"name": "계단_좌", "types": "stairs", "coords": [11, 4], "connected_node": "hall_계단_좌"},
+    {"name": "계단_우", "types": "stairs", "coords": [11, 11], "connected_node": "hall_계단_우"}
   ]
 }

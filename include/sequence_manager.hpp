@@ -45,9 +45,9 @@ class SequenceManager {
   // navigation local-setting//
   using FollowPath = nav2_msgs::action::FollowPath;
   using GoalHandleFollowPath = rclcpp_action::ClientGoalHandle<FollowPath>;
-  bool path_tracking(Point current_location, const std::vector<Point>& path_list);
+  bool path_tracking(const std::vector<Point>& path_list);
   // assisted teleop
-  void send_assisted_teleop();
+  bool send_assisted_teleop();
   void cancel_assisted_teleop();
   // check sound
   void check_sound_trigger(const Point& current_location);

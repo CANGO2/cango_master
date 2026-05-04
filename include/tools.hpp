@@ -17,12 +17,10 @@ struct Point { double x; double y; };
 
 class calc_coordinate {
 public:
-    calc_coordinate(const std::string& file_path = "/home/lsk/colcon_ws/src/cango_master/config/symantic_transition.yaml") {
-        load_semantic_map(file_path);
-    }
+  calc_coordinate() {};
 
     struct NodeInfo { std::string id; double x, y; };
-    struct EdgeInfo { std::string start, end, label; };
+    struct EdgeInfo { std::string start, end; };
 
     void load_semantic_map(const std::string& file_path);
     void serch_node(std::string id, Point &pt);

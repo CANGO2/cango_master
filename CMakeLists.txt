@@ -54,7 +54,7 @@ install(TARGETS ${TARGET_NAME}
   DESTINATION lib/${PROJECT_NAME}
 )
 
-install(DIRECTORY launch config
+install(DIRECTORY launch config maps
   DESTINATION share/${PROJECT_NAME}
 )
 
