@@ -14,6 +14,7 @@
 #include "cango_msgs/msg/robot_status.hpp"
 #include "cango_msgs/msg/sound_request.hpp"
 #include "std_msgs/msg/float32.hpp"
+#include "std_msgs/msg/float32_multi_array.hpp"
 
 namespace cango_master {
 
@@ -25,6 +26,7 @@ class CangoMaster : public rclcpp::Node {
   bool robot_up = false;
   bool vibration_flag = false;
   float obs_safety = 0.0;
+  float obs_heading = 0.0;
  private:
   void setup();
   void run();
@@ -36,7 +38,7 @@ class CangoMaster : public rclcpp::Node {
   void HandCB(const cango_msgs::msg::RobotControl::ConstSharedPtr& msg);
   void RobotStatusCB(const cango_msgs::msg::RobotStatus::ConstSharedPtr& msg);
   void Nav2CB(const geometry_msgs::msg::Twist::SharedPtr msg);
-  void SafeCB(const std_msgs::msg::Float32::ConstSharedPtr& msg);
+  void SafeCB(const std_msgs::msg::Float32MultiArray::ConstSharedPtr& msg);
   void timerCallback();
 
   void task_pub();
@@ -77,7 +79,7 @@ class CangoMaster : public rclcpp::Node {
   rclcpp::Subscription<cango_msgs::msg::RobotControl>::SharedPtr
       hand_subscription;
   rclcpp::Subscription<cango_msgs::msg::LlmRequest>::SharedPtr llm_subscription;
-  rclcpp::Subscription<std_msgs::msg::Float32>::SharedPtr safe_subscription;
+  rclcpp::Subscription<std_msgs::msg::Float32MultiArray>::SharedPtr safe_subscription;
   rclcpp::Publisher<cango_msgs::msg::TaskStatus>::SharedPtr master_publisher;
   rclcpp::Publisher<cango_msgs::msg::Navigation>::SharedPtr navi_publisher;
   rclcpp::Publisher<cango_msgs::msg::LlmRequest>::SharedPtr llm_publisher;

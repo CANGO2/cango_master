@@ -160,28 +160,14 @@ bool SequenceManager::create_full_path(const std::vector<Point> &path_list,
   return true;
 }
 
-  bool SequenceManager::path_tracking(const std::vector<Point> &path_list)
+  bool SequenceManager::path_tracking()
   {
-    if (path_list.empty())
-    {
-      RCLCPP_WARN(node_->get_logger(), "Path list is empty.");
-      return false;
-    }
 
-    // 1. Point 벡터를 nav_msgs::msg::Path 형식으로 변환
-    nav_msgs::msg::Path nav2_path;
-    nav2_path.header.frame_id = "map";
-    nav2_path.header.stamp = node_->now();
-
-    for (const auto &pt : path_list)
-    {
-      geometry_msgs::msg::PoseStamped pose;
-      pose.header = nav2_path.header;
-      pose.pose.position.x = pt.x;
-      pose.pose.position.y = pt.y;
-      pose.pose.orientation.w = 1.0; // 기본 방향
-      nav2_path.poses.push_back(pose);
-    }
+      if (last_generated_path_.poses.empty())
+  {
+    RCLCPP_WARN(node_->get_logger(), "Generated path is empty.");
+    return false;
+  }
 
     // 2. 액션 서버 연결 확인
     if (!navigation_action_client_->wait_for_action_server(
@@ -194,7 +180,7 @@ bool SequenceManager::create_full_path(const std::vector<Point> &path_list,
 
     // 3. 목표(Goal) 설정
     auto goal_msg = FollowPath::Goal();
-    goal_msg.path = nav2_path;
+    goal_msg.path = last_generated_path_;
     goal_msg.controller_id = "FollowPath"; // DWA 설정 이름
 
     // 4. 액션 전송

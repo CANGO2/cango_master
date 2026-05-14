@@ -37,7 +37,7 @@ namespace cango_master
     navi_subscription = this->create_subscription<cango_msgs::msg::Navigation>(
         "/navi2master", 10,
         std::bind(&CangoMaster::NaviCB, this, std::placeholders::_1));
-    safe_subscription = this->create_subscription<std_msgs::msg::Float32>(
+    safe_subscription = this->create_subscription<std_msgs::msg::Float32MultiArray>(
         "/obs_distance", 10,
         std::bind(&CangoMaster::SafeCB, this, std::placeholders::_1));
     llm_subscription = this->create_subscription<cango_msgs::msg::LlmRequest>(
@@ -101,7 +101,7 @@ namespace cango_master
       }
       else if (map_available && auto_driving)
       {
-        bool success = sequence_manager->path_tracking(sequence_manager->path_list);
+        bool success = sequence_manager->path_tracking();
         if (success)
         {
           is_moving = true;
@@ -209,9 +209,10 @@ namespace cango_master
   {
   }
 
-  void CangoMaster::SafeCB(const std_msgs::msg::Float32::ConstSharedPtr &msg)
+  void CangoMaster::SafeCB(const std_msgs::msg::Float32MultiArray::ConstSharedPtr &msg)
   {
-    obs_safety = msg->data;
+    obs_safety = msg->data[0];
+    obs_heading = msg->data[1];
   }
   void CangoMaster::task_pub() {}
   void CangoMaster::sound_pub()
@@ -246,6 +247,7 @@ namespace cango_master
     {
       llm_request.map_search = 0;
     }
+    llm_request.stand = robot_up;
     llm_publisher->publish(llm_request);
   }
 
@@ -265,7 +267,7 @@ namespace cango_master
       {
         robot_control.linear_speed = robot_cmd.linear_speed * obs_safety;
         robot_control.side_speed = robot_cmd.side_speed * obs_safety;
-        robot_control.ang_speed = robot_cmd.ang_speed * obs_safety;
+        robot_control.ang_speed = robot_cmd.ang_speed * obs_safety + obs_heading;
       }
     }
     else
