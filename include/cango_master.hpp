@@ -13,6 +13,7 @@
 #include "cango_msgs/msg/robot_control.hpp"
 #include "cango_msgs/msg/robot_status.hpp"
 #include "cango_msgs/msg/sound_request.hpp"
+#include "std_msgs/msg/float32.hpp"
 
 namespace cango_master {
 
@@ -21,21 +22,21 @@ class CangoMaster : public rclcpp::Node {
   CangoMaster();
   bool auto_mode = false; // 자율주행 알고리즘 활성화
   bool auto_driving = false; // 실제 자율주행 여부 
-  bool robot_up = false; // 로봇이 서야한다는 명령
-  bool robot_stand = false; // 로봇이 서있는 상태인지 여부
-
+  bool robot_up = false;
+  bool vibration_flag = false;
+  float obs_safety = 0.0;
  private:
   void setup();
   void run();
   void reset();
   void StateChanger();
-  bool collision_avoid();
   ////callback functions ///////
   void NaviCB(const cango_msgs::msg::Navigation::ConstSharedPtr& msg);
   void LlmCB(const cango_msgs::msg::LlmRequest::ConstSharedPtr& msg);
   void HandCB(const cango_msgs::msg::RobotControl::ConstSharedPtr& msg);
   void RobotStatusCB(const cango_msgs::msg::RobotStatus::ConstSharedPtr& msg);
   void Nav2CB(const geometry_msgs::msg::Twist::SharedPtr msg);
+  void SafeCB(const std_msgs::msg::Float32::ConstSharedPtr& msg);
   void timerCallback();
 
   void task_pub();
@@ -43,13 +44,13 @@ class CangoMaster : public rclcpp::Node {
   void llm_pub();
   void control_pub();
 
+
   bool ask_map_available = false;
   bool map_available = false;
   bool is_moving = false; //경로 추적하면서 사운드 트리거하려고
   bool is_request = false;
   bool is_user_interrupted = false;
   bool motor_enable = false;
-  bool teleop_action_once = false;
 
   cango_msgs::msg::TaskStatus now_status;
   cango_msgs::msg::SoundRequest sound_request;
@@ -76,10 +77,10 @@ class CangoMaster : public rclcpp::Node {
   rclcpp::Subscription<cango_msgs::msg::RobotControl>::SharedPtr
       hand_subscription;
   rclcpp::Subscription<cango_msgs::msg::LlmRequest>::SharedPtr llm_subscription;
+  rclcpp::Subscription<std_msgs::msg::Float32>::SharedPtr safe_subscription;
   rclcpp::Publisher<cango_msgs::msg::TaskStatus>::SharedPtr master_publisher;
   rclcpp::Publisher<cango_msgs::msg::Navigation>::SharedPtr navi_publisher;
   rclcpp::Publisher<cango_msgs::msg::LlmRequest>::SharedPtr llm_publisher;
-  rclcpp::Publisher<geometry_msgs::msg::Twist>::SharedPtr teleop_publisher;
   rclcpp::Publisher<cango_msgs::msg::RobotControl>::SharedPtr control_publisher;
   rclcpp::Publisher<cango_msgs::msg::SoundRequest>::SharedPtr sound_publisher;
   rclcpp::TimerBase::SharedPtr timer_;

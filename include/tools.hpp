@@ -58,6 +58,7 @@ class pd_controller {
 class robot_command {
  public:
   double linear_speed = 0.0, side_speed = 0.0, ang_speed = 0.0;
+  bool vibration = false;
 };
  
 

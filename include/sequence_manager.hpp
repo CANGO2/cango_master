@@ -20,9 +20,7 @@
 #include "nav_msgs/msg/path.hpp"
 #include "nav_msgs/srv/get_plan.hpp"
 #include "nav2_msgs/action/follow_path.hpp"
-#include "nav2_msgs/action/assisted_teleop.hpp"
 #include "geometry_msgs/msg/twist.hpp"
-
 namespace cango_master {
 
 class SequenceManager {
@@ -46,9 +44,6 @@ class SequenceManager {
   using FollowPath = nav2_msgs::action::FollowPath;
   using GoalHandleFollowPath = rclcpp_action::ClientGoalHandle<FollowPath>;
   bool path_tracking(const std::vector<Point>& path_list);
-  // assisted teleop
-  bool send_assisted_teleop();
-  void cancel_assisted_teleop();
   // check sound
   void check_sound_trigger(const Point& current_location);
 
@@ -67,7 +62,6 @@ class SequenceManager {
   nav_msgs::msg::Path last_generated_path_;
   rclcpp::Client<nav_msgs::srv::GetPlan>::SharedPtr planner_service_client_;
   rclcpp_action::Client<FollowPath>::SharedPtr navigation_action_client_;
-  rclcpp_action::Client<nav2_msgs::action::AssistedTeleop>::SharedPtr assisted_teleop_client_;
   // localization//
   geometry_msgs::msg::PoseStamped get_current_pose(
       const Point& current_location);

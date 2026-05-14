@@ -8,6 +8,8 @@ namespace cango_master
 
   CangoMaster::CangoMaster() : Node("cango_master")
   {
+    std::this_thread::sleep_for(std::chrono::seconds(5));
+
     this->setup();
 
     this->declare_parameter<double>("sound_trigger_distance", 0.0); // 기본값 1.0으로 선언
@@ -18,8 +20,9 @@ namespace cango_master
     {
       coordinate_converter.load_semantic_map(semantic_config_path);
     }
-    else {
-      RCLCPP_WARN(this->get_logger(),"Semantic config path is wrong!");
+    else
+    {
+      RCLCPP_WARN(this->get_logger(), "Semantic config path is wrong!");
     }
     sequence_manager =
         std::make_unique<SequenceManager>(this, semantic_config_path);
@@ -34,27 +37,28 @@ namespace cango_master
     navi_subscription = this->create_subscription<cango_msgs::msg::Navigation>(
         "/navi2master", 10,
         std::bind(&CangoMaster::NaviCB, this, std::placeholders::_1));
+    safe_subscription = this->create_subscription<std_msgs::msg::Float32>(
+        "/obs_distance", 10,
+        std::bind(&CangoMaster::SafeCB, this, std::placeholders::_1));
     llm_subscription = this->create_subscription<cango_msgs::msg::LlmRequest>(
-        "/llm2master", 10,
+        "/cango/llm2master", 10,
         std::bind(&CangoMaster::LlmCB, this, std::placeholders::_1));
     sound_publisher = this->create_publisher<cango_msgs::msg::SoundRequest>(
-        "/master2sound", 10);
+        "/cango/master2sound", 10);
     master_publisher =
         this->create_publisher<cango_msgs::msg::TaskStatus>("/task_status", 10);
     llm_publisher =
-        this->create_publisher<cango_msgs::msg::LlmRequest>("/master2llm", 10);
+        this->create_publisher<cango_msgs::msg::LlmRequest>("/cango/master2llm", 10);
     navi_publisher =
         this->create_publisher<cango_msgs::msg::Navigation>("/master2navi", 10);
     control_publisher = this->create_publisher<cango_msgs::msg::RobotControl>(
         "/master2control", 10);
     nav2_cmd_subscription = this->create_subscription<geometry_msgs::msg::Twist>(
-        "/cmd_vel", 10,
+        "/cmd_vel_nav", 10,
         std::bind(&CangoMaster::Nav2CB, this, std::placeholders::_1));
-    teleop_publisher = this->create_publisher<geometry_msgs::msg::Twist>(
-        "/collision_cmd", 10);
     timer_ =
         this->create_wall_timer(std::chrono::duration<double>(0.1),
-                                std::bind(&CangoMaster::timerCallback, this));
+        std::bind(&CangoMaster::timerCallback, this));
   }
   void CangoMaster::timerCallback() { run(); }
   void CangoMaster::reset() {}
@@ -83,7 +87,8 @@ namespace cango_master
     }
     else if (auto_mode) // 조종기 자율모드
     {
-      teleop_action_once = false;
+      std::cout<<"map_available : "<<map_available<<" , ask_map_available : "<<ask_map_available<<" , auto_driving : "<<auto_driving<<std::endl;
+
       if (ask_map_available && !map_available)
       {
         sequence_manager->search_path(waypoint_list);
@@ -119,25 +124,6 @@ namespace cango_master
       }
     }
   }
-  bool CangoMaster::collision_avoid()
-  {
-    if (!auto_mode && motor_enable)
-    {
-      if (!teleop_action_once)
-      {
-        teleop_action_once = sequence_manager->send_assisted_teleop();
-        return false;
-      }
-
-      geometry_msgs::msg::Twist drive_msg;
-      drive_msg.linear.x = robot_cmd.linear_speed;
-      drive_msg.linear.y = robot_cmd.side_speed;
-      drive_msg.angular.z = robot_cmd.ang_speed;
-      teleop_publisher->publish(drive_msg); // 충돌서버에 속도 전송
-      return true;
-    }
-    return false;
-  }
 
   void CangoMaster::NaviCB(
       const cango_msgs::msg::Navigation::ConstSharedPtr &msg)
@@ -151,27 +137,28 @@ namespace cango_master
   void CangoMaster::HandCB(
       const cango_msgs::msg::RobotControl::ConstSharedPtr &msg)
   {
-    if (msg->robot_up == 1)
+    bool prev_mode = auto_mode;
+    bool prev_robot_up = robot_up;
+
+    auto_mode = (msg->mode == 0);
+    robot_up = msg->robot_up;
+
+    bool mode_changed = (prev_mode != auto_mode);
+    bool robot_up_changed = (prev_robot_up != robot_up);
+
+    if (mode_changed || robot_up_changed)
     {
-      robot_up = true;
-      return;
-    }
-    else if (msg->robot_up == false)
-    {
-      robot_up = false;
-      robot_stand = false;
-    }
-    if (msg->mode == 1)
-    {
-      auto_mode = false;
+      robot_cmd.vibration = true;
+      vibration_flag = true;
     }
     else
     {
-      auto_mode = true;
+      robot_cmd.vibration = false;
     }
+
     robot_cmd.linear_speed = msg->linear_speed;
     robot_cmd.side_speed = msg->side_speed;
-    robot_cmd.ang_speed = msg->ang_speed;
+    robot_cmd.ang_speed = msg -> ang_speed;
   }
 
   void CangoMaster::LlmCB(
@@ -214,12 +201,18 @@ namespace cango_master
     }
     goalpoint = msg->goalpoint;
     waypoint_list = msg->waypoints;
+    
   }
 
   void CangoMaster::RobotStatusCB(
-      const cango_msgs::msg::RobotStatus::ConstSharedPtr &msg) {
+      const cango_msgs::msg::RobotStatus::ConstSharedPtr &msg)
+  {
+  }
 
-      }
+  void CangoMaster::SafeCB(const std_msgs::msg::Float32::ConstSharedPtr &msg)
+  {
+    obs_safety = msg->data;
+  }
   void CangoMaster::task_pub() {}
   void CangoMaster::sound_pub()
   {
@@ -232,12 +225,9 @@ namespace cango_master
 
   void CangoMaster::Nav2CB(const geometry_msgs::msg::Twist::SharedPtr msg)
   {
-    if (auto_mode)
-    {
-      nav2_cmd.linear_speed = msg->linear.x;
-      nav2_cmd.side_speed = msg->linear.y; // 옴니휠/메카넘휠인 경우 사용
-      nav2_cmd.ang_speed = msg->angular.z;
-    }
+    nav2_cmd.linear_speed = msg->linear.x;
+    nav2_cmd.side_speed = msg->linear.y;
+    nav2_cmd.ang_speed = msg->angular.z;
   }
 
   void CangoMaster::llm_pub()
@@ -263,13 +253,6 @@ namespace cango_master
   {
     cango_msgs::msg::RobotControl robot_control;
 
-    if (robot_up && !robot_stand)
-    {
-      robot_control.robot_up = true;
-      control_publisher->publish(robot_control);
-      robot_stand = true;
-      return;
-    }
     if (motor_enable)
     {
       if (auto_mode)
@@ -279,36 +262,22 @@ namespace cango_master
         robot_control.ang_speed = nav2_cmd.ang_speed * robot_cmd.linear_speed;
       }
       else
-      { // 수동 모드
-     
-        // if (collision_avoid())
-        // {
-        //   robot_control.linear_speed = nav2_cmd.linear_speed;
-        //   robot_control.side_speed = nav2_cmd.side_speed;
-        //   robot_control.ang_speed = nav2_cmd.ang_speed;
-        // }
-        // else
-        // {
-        //   robot_control.linear_speed = 0.0;
-        //   robot_control.side_speed = 0.0;
-        //   robot_control.ang_speed = 0.0;
-        // }
-     
-        //////조종기본값 디버깅용 코드//////////////
-        robot_control.linear_speed = robot_cmd.linear_speed;
-        robot_control.side_speed = robot_cmd.side_speed;
-        robot_control.ang_speed = robot_cmd.ang_speed;
-        ////////////////////////////////////////
+      {
+        robot_control.linear_speed = robot_cmd.linear_speed * obs_safety;
+        robot_control.side_speed = robot_cmd.side_speed * obs_safety;
+        robot_control.ang_speed = robot_cmd.ang_speed * obs_safety;
       }
     }
     else
     {
-      // sequence_manager->cancel_assisted_teleop();
       robot_control.linear_speed = 0.0;
       robot_control.side_speed = 0.0;
       robot_control.ang_speed = 0.0;
     }
+    robot_control.robot_up = robot_up;
+    robot_control.vibration = vibration_flag;
     control_publisher->publish(robot_control);
+    vibration_flag = false;
   }
 } // namespace cango_master
 
@@ -316,9 +285,12 @@ int main(int argc, char *argv[])
 {
   rclcpp::init(argc, argv);
   auto node = std::make_shared<cango_master::CangoMaster>();
-  rclcpp::executors::SingleThreadedExecutor executor;
-  RCLCPP_INFO(node->get_logger(), "Spinning node '%s' with %s",
-              node->get_fully_qualified_name(), "SingleThreadedExecutor");
+
+  // Single 대신 MultiThreadedExecutor 사용
+  rclcpp::executors::MultiThreadedExecutor executor;
+
+  RCLCPP_INFO(node->get_logger(), "Running with MultiThreadedExecutor");
+
   executor.add_node(node);
   executor.spin();
   rclcpp::shutdown();
