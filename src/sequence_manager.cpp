@@ -1,99 +1,122 @@
 #include <sequence_manager.hpp>
+
+#include <chrono>
+#include <cmath>
 #include <future>
 
 namespace cango_master
 {
 
-  SequenceManager::SequenceManager(rclcpp::Node *node,
-                                   const std::string &yaml_path)
-      : node_(node)
+SequenceManager::SequenceManager(rclcpp::Node *node,
+                                 const std::string &yaml_path)
+    : node_(node)
+{
+  coordinate_converter.load_semantic_map(yaml_path);
+
+  action_callback_group_ =
+      node_->create_callback_group(rclcpp::CallbackGroupType::Reentrant);
+
+  compute_path_client_ =
+      rclcpp_action::create_client<ComputePathToPose>(
+          node_,
+          "/compute_path_to_pose",
+          action_callback_group_);
+
+  navigation_action_client_ =
+      rclcpp_action::create_client<FollowPath>(
+          node_,
+          "/follow_path",
+          action_callback_group_);
+}
+
+void SequenceManager::reset() {}
+
+void SequenceManager::update_status()
+{
+  prev_status = new_status;
+}
+
+void SequenceManager::search_path(std::vector<std::string> waypoint_list)
+{
+  path_list.clear();
+
+  for (const auto &wp : waypoint_list)
   {
-    coordinate_converter.load_semantic_map(yaml_path);
-    planner_service_client_ = node_->create_client<nav_msgs::srv::GetPlan>("/get_plan");
-    navigation_action_client_ = rclcpp_action::create_client<FollowPath>(node_, "/follow_path");
+    Point pt;
+    coordinate_converter.id2pcd(wp, pt);
+    path_list.push_back(pt);
+
+    RCLCPP_INFO(
+        node_->get_logger(),
+        "Waypoint %s -> x=%.3f, y=%.3f",
+        wp.c_str(),
+        pt.x,
+        pt.y);
+  }
+}
+
+geometry_msgs::msg::PoseStamped SequenceManager::get_current_pose(
+    const Point &current_location)
+{
+  geometry_msgs::msg::PoseStamped current_pose;
+  current_pose.header.frame_id = "map";
+  current_pose.header.stamp = node_->now();
+
+  current_pose.pose.position.x = current_location.x;
+  current_pose.pose.position.y = current_location.y;
+  current_pose.pose.position.z = 0.0;
+  current_pose.pose.orientation.w = 1.0;
+
+  if (current_location.x == 0.0 && current_location.y == 0.0)
+  {
+    RCLCPP_WARN(
+        node_->get_logger(),
+        "Current location is (0,0). This may be wrong.");
   }
 
-  void SequenceManager::reset() {}
-
-  void SequenceManager::update_status() { prev_status = new_status; }
-
-  void SequenceManager::search_path(std::vector<std::string> waypoint_list)
-  {
-    path_list.clear();
-    for (const auto &wp : waypoint_list)
-    {
-      Point pt;
-      coordinate_converter.id2pcd(wp, pt);
-      path_list.push_back(pt);
-    }
-  }
-
-  geometry_msgs::msg::PoseStamped SequenceManager::get_current_pose(
-      const Point &current_location)
-  {
-    geometry_msgs::msg::PoseStamped current_pose;
-    current_pose.header.frame_id = "map";
-    current_pose.header.stamp = node_->now();
-
-    try
-    {
-      current_pose.pose.position.x = current_location.x;
-      current_pose.pose.position.y = current_location.y;
-      current_pose.pose.position.z = 0.0;
-      current_pose.pose.orientation.w = 1.0;
-      if (current_location.x == 0.0 && current_location.y == 0.0)
-      {
-        throw std::runtime_error("Current location is (0,0), likely an error.");
-      }
-    }
-    catch (const std::exception &ex)
-    {
-      RCLCPP_WARN(node_->get_logger(), "cannot find robot_location: %s",
-                  ex.what());
-    }
-
-    return current_pose;
-  }
+  return current_pose;
+}
 
 bool SequenceManager::create_full_path(const std::vector<Point> &path_list,
                                        const Point &current_location)
 {
-  // 1. 웨이포인트 체크
-  if (path_list.empty())
-  {
-    RCLCPP_WARN(node_->get_logger(), "Need at least 1 waypoint to create path.");
-    return false;
-  }
-
- if (!planner_service_client_) {
-      RCLCPP_ERROR(node_->get_logger(), "Planner client is NULL!");
-      return false;
-  }
-RCLCPP_INFO(node_->get_logger(), "create_full_path() called");
-RCLCPP_INFO(node_->get_logger(), "Number of waypoints: %zu", path_list.size());
+  RCLCPP_INFO(node_->get_logger(), "create_full_path() called");
+  RCLCPP_INFO(node_->get_logger(), "Number of waypoints: %zu", path_list.size());
   RCLCPP_INFO(
       node_->get_logger(),
       "Current location: x=%.3f, y=%.3f",
       current_location.x,
       current_location.y);
 
-  // 2. 서비스가 준비되었는지 확인 (절대 경로로 다시 시도)
-  if (!planner_service_client_->service_is_ready()) {
-      RCLCPP_WARN(node_->get_logger(), "Service /get_plan is not ready, waiting...");
-      if (!planner_service_client_->wait_for_service(std::chrono::milliseconds(500))) {
-          RCLCPP_ERROR(node_->get_logger(), "Planner service (/get_plan) still not available!");
-          return false;
-      }
+  if (path_list.empty())
+  {
+    RCLCPP_WARN(node_->get_logger(), "Need at least 1 waypoint to create path.");
+    return false;
   }
 
-  // 3. 경로 초기화
+  if (!compute_path_client_)
+  {
+    RCLCPP_ERROR(node_->get_logger(), "ComputePathToPose client is NULL.");
+    return false;
+  }
+
+  if (!compute_path_client_->wait_for_action_server(std::chrono::seconds(5)))
+  {
+    RCLCPP_ERROR(
+        node_->get_logger(),
+        "Action server /compute_path_to_pose is not available.");
+    return false;
+  }
+
   last_generated_path_.poses.clear();
   last_generated_path_.header.frame_id = "map";
   last_generated_path_.header.stamp = node_->now();
 
-  // 4. 전체 지점 리스트 구성 (현재 위치 + 모든 웨이포인트)
   std::vector<geometry_msgs::msg::PoseStamped> all_points;
-  geometry_msgs::msg::PoseStamped current_pose = get_current_pose(current_location);
+
+  geometry_msgs::msg::PoseStamped current_pose =
+      get_current_pose(current_location);
+
   all_points.push_back(current_pose);
 
   for (const auto &pt : path_list)
@@ -101,126 +124,192 @@ RCLCPP_INFO(node_->get_logger(), "Number of waypoints: %zu", path_list.size());
     geometry_msgs::msg::PoseStamped p;
     p.header.frame_id = "map";
     p.header.stamp = node_->now();
+
     p.pose.position.x = pt.x;
     p.pose.position.y = pt.y;
     p.pose.position.z = 0.0;
     p.pose.orientation.w = 1.0;
+
     all_points.push_back(p);
   }
 
-  // 5. 각 지점 사이의 경로를 Planner에게 요청
-  // 5. 각 지점 사이의 경로를 Planner에게 요청
+  for (size_t i = 0; i < all_points.size(); ++i)
+  {
+    RCLCPP_INFO(
+        node_->get_logger(),
+        "Path point %zu: x=%.3f, y=%.3f",
+        i,
+        all_points[i].pose.position.x,
+        all_points[i].pose.position.y);
+  }
+
   for (size_t i = 0; i < all_points.size() - 1; ++i)
   {
     RCLCPP_INFO(
-    node_->get_logger(),
-    "Requesting plan segment %zu: start(%.3f, %.3f) -> goal(%.3f, %.3f)",
-    i,
-    all_points[i].pose.position.x,
-    all_points[i].pose.position.y,
-    all_points[i + 1].pose.position.x,
-    all_points[i + 1].pose.position.y);
+        node_->get_logger(),
+        "Requesting segment %zu: start(%.3f, %.3f) -> goal(%.3f, %.3f)",
+        i,
+        all_points[i].pose.position.x,
+        all_points[i].pose.position.y,
+        all_points[i + 1].pose.position.x,
+        all_points[i + 1].pose.position.y);
 
-    auto request = std::make_shared<nav_msgs::srv::GetPlan::Request>();
-    request->start = all_points[i];
-    request->goal = all_points[i + 1];
-    request->tolerance = 0.1f;
+    auto goal_msg = ComputePathToPose::Goal();
 
-    auto result_future = planner_service_client_->async_send_request(request);
+    goal_msg.start = all_points[i];
+    goal_msg.goal = all_points[i + 1];
+    goal_msg.planner_id = "GridBased";
+    goal_msg.use_start = true;
 
-    auto status = result_future.wait_for(std::chrono::seconds(2));
+    auto goal_handle_future =
+        compute_path_client_->async_send_goal(goal_msg);
 
-    if (status == std::future_status::ready)
+    if (goal_handle_future.wait_for(std::chrono::seconds(5)) !=
+        std::future_status::ready)
     {
-      auto response = result_future.get();
-
-      if (response && !response->plan.poses.empty())
-      {
-        if (!last_generated_path_.poses.empty())
-        {
-          last_generated_path_.poses.pop_back();
-        }
-
-        last_generated_path_.poses.insert(
-            last_generated_path_.poses.end(),
-            response->plan.poses.begin(),
-            response->plan.poses.end());
-      }
-      else
-      {
-        RCLCPP_ERROR(
-            node_->get_logger(),
-            "Planner returned an empty plan between point %zu and %zu",
-            i, i + 1);
-        return false;
-      }
+      RCLCPP_ERROR(node_->get_logger(), "ComputePathToPose goal send timeout.");
+      return false;
     }
-    else
+
+    auto goal_handle = goal_handle_future.get();
+
+    if (!goal_handle)
+    {
+      RCLCPP_ERROR(node_->get_logger(), "ComputePathToPose goal was rejected.");
+      return false;
+    }
+
+    RCLCPP_INFO(node_->get_logger(), "ComputePathToPose goal accepted.");
+
+    auto result_future =
+        compute_path_client_->async_get_result(goal_handle);
+
+    if (result_future.wait_for(std::chrono::seconds(10)) !=
+        std::future_status::ready)
+    {
+      RCLCPP_ERROR(node_->get_logger(), "ComputePathToPose result timeout.");
+      return false;
+    }
+
+    auto wrapped_result = result_future.get();
+
+    if (wrapped_result.code != rclcpp_action::ResultCode::SUCCEEDED)
     {
       RCLCPP_ERROR(
           node_->get_logger(),
-          "Service call timeout for plan segment %zu",
-          i);
+          "ComputePathToPose failed. Result code: %d",
+          static_cast<int>(wrapped_result.code));
       return false;
     }
+
+    if (!wrapped_result.result)
+    {
+      RCLCPP_ERROR(node_->get_logger(), "ComputePathToPose result is NULL.");
+      return false;
+    }
+
+    auto path = wrapped_result.result->path;
+
+    if (path.poses.empty())
+    {
+      RCLCPP_ERROR(node_->get_logger(), "Computed path segment is empty.");
+      return false;
+    }
+
+    if (!last_generated_path_.poses.empty())
+    {
+      last_generated_path_.poses.pop_back();
+    }
+
+    last_generated_path_.poses.insert(
+        last_generated_path_.poses.end(),
+        path.poses.begin(),
+        path.poses.end());
+
+    RCLCPP_INFO(
+        node_->get_logger(),
+        "Segment %zu added. Total poses: %zu",
+        i,
+        last_generated_path_.poses.size());
   }
 
+  last_generated_path_.header.frame_id = "map";
+  last_generated_path_.header.stamp = node_->now();
 
-  RCLCPP_INFO(node_->get_logger(), "Successfully created full path with %zu poses", last_generated_path_.poses.size());
+  RCLCPP_INFO(
+      node_->get_logger(),
+      "Successfully created full path with %zu poses.",
+      last_generated_path_.poses.size());
+
   return true;
 }
 
-  bool SequenceManager::path_tracking()
-  {
-
-      if (last_generated_path_.poses.empty())
+bool SequenceManager::path_tracking()
+{
+  if (last_generated_path_.poses.empty())
   {
     RCLCPP_WARN(node_->get_logger(), "Generated path is empty.");
     return false;
   }
 
-    // 2. 액션 서버 연결 확인
-    if (!navigation_action_client_->wait_for_action_server(
-            std::chrono::seconds(2)))
-    {
-      RCLCPP_ERROR(node_->get_logger(),
-                   "Nav2 Controller Server (FollowPath) not found.");
-      return false;
-    }
-
-    // 3. 목표(Goal) 설정
-    auto goal_msg = FollowPath::Goal();
-    goal_msg.path = last_generated_path_;
-    goal_msg.controller_id = "FollowPath"; // DWA 설정 이름
-
-    // 4. 액션 전송
-    RCLCPP_INFO(node_->get_logger(), "Sending path to Nav2 DWA Controller...");
-    navigation_action_client_->async_send_goal(goal_msg);
-
-    return true; // 요청 성공
-  }
-
-  void SequenceManager::check_sound_trigger(const Point &current_location)
+  if (!navigation_action_client_)
   {
-    int detected_trigger = 0;
-    for (size_t i = 0; i < path_list.size(); ++i)
-    {
-      double dist = std::hypot(current_location.x - path_list[i].x,
-                               current_location.y - path_list[i].y);
+    RCLCPP_ERROR(node_->get_logger(), "FollowPath action client is NULL.");
+    return false;
+  }
 
-      if (i == path_list.size() - 1)
-      { // 목적지 관련
-        if (dist < 0.5)
-          detected_trigger = 3;
-        else if (dist < 5.0)
-          detected_trigger = 2;
+  if (!navigation_action_client_->wait_for_action_server(std::chrono::seconds(5)))
+  {
+    RCLCPP_ERROR(
+        node_->get_logger(),
+        "Action server /follow_path is not available.");
+    return false;
+  }
+
+  auto goal_msg = FollowPath::Goal();
+
+  goal_msg.path = last_generated_path_;
+  goal_msg.controller_id = "PP";
+
+  RCLCPP_INFO(
+      node_->get_logger(),
+      "Sending path to /follow_path. poses=%zu",
+      last_generated_path_.poses.size());
+
+  navigation_action_client_->async_send_goal(goal_msg);
+
+  return true;
+}
+
+void SequenceManager::check_sound_trigger(const Point &current_location)
+{
+  int detected_trigger = 0;
+
+  for (size_t i = 0; i < path_list.size(); ++i)
+  {
+    double dist = std::hypot(
+        current_location.x - path_list[i].x,
+        current_location.y - path_list[i].y);
+
+    if (i == path_list.size() - 1)
+    {
+      if (dist < 0.5)
+      {
+        detected_trigger = 3;
       }
-      else if (dist < 0.5)
-      { // 경유지
-        detected_trigger = 1;
-        break; // 하나라도 걸리면 중단
+      else if (dist < 5.0)
+      {
+        detected_trigger = 2;
       }
     }
-    sound_trigger = detected_trigger;
+    else if (dist < 0.5)
+    {
+      detected_trigger = 1;
+      break;
+    }
   }
-} // namespace cango_master
+
+  sound_trigger = detected_trigger;
+}
+
+}  // namespace cango_master

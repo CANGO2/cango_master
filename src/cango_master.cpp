@@ -58,7 +58,7 @@ namespace cango_master
         std::bind(&CangoMaster::Nav2CB, this, std::placeholders::_1));
     timer_ =
         this->create_wall_timer(std::chrono::duration<double>(0.1),
-        std::bind(&CangoMaster::timerCallback, this));
+                                std::bind(&CangoMaster::timerCallback, this));
   }
   void CangoMaster::timerCallback() { run(); }
   void CangoMaster::reset() {}
@@ -72,63 +72,64 @@ namespace cango_master
   }
 
   void CangoMaster::StateChanger()
-{
-  motor_enable = true;
-
-  if (!auto_mode)
   {
     motor_enable = true;
-    auto_driving = false;
-    is_moving = false;
+
+    if (!auto_mode)
+    {
+      motor_enable = true;
+      auto_driving = false;
+      is_moving = false;
+    }
+
+    if (ask_map_available && !map_available)
+    {
+      RCLCPP_INFO(this->get_logger(), "Map search requested. Creating full path...");
+
+      sequence_manager->search_path(waypoint_list);
+
+      bool check = sequence_manager->create_full_path(
+          sequence_manager->path_list, pcl_location);
+
+      if (check)
+      {
+        RCLCPP_INFO(this->get_logger(), "Path created successfully.");
+        map_available = true;
+      }
+      else
+      {
+        RCLCPP_ERROR(this->get_logger(), "Path creation failed.");
+        map_available = false;
+        ask_map_available = false;
+      }
+    }
+
+    if (auto_mode && map_available && auto_driving)
+    {
+      bool success = sequence_manager->path_tracking();
+
+      if (success)
+      {
+        is_moving = true;
+        ask_map_available = false;
+        map_available = false;
+      }
+      else
+      {
+        RCLCPP_ERROR(this->get_logger(), "Failed to start path tracking.");
+      }
+    }
+    // 자율주행시 주변안내 트리거
+    if (is_moving)
+    {
+      sequence_manager->check_sound_trigger(pcl_location);
+
+      if (sequence_manager->sound_trigger != 0)
+      {
+        sound_pub();
+      }
+    }
   }
-
-  if (ask_map_available && !map_available)
-  {
-    RCLCPP_INFO(this->get_logger(), "Map search requested. Creating full path...");
-
-    sequence_manager->search_path(waypoint_list);
-
-    bool check = sequence_manager->create_full_path(
-        sequence_manager->path_list, pcl_location);
-
-    if (check)
-    {
-      RCLCPP_INFO(this->get_logger(), "Path created successfully.");
-      map_available = true;
-    }
-    else
-    {
-      RCLCPP_ERROR(this->get_logger(), "Path creation failed.");
-      map_available = false;
-    }
-  }
-
-  if (auto_mode && map_available && auto_driving)
-  {
-    bool success = sequence_manager->path_tracking();
-
-    if (success)
-    {
-      is_moving = true;
-      ask_map_available = false;
-      map_available = false;
-    }
-    else
-    {
-      RCLCPP_ERROR(this->get_logger(), "Failed to start path tracking.");
-    }
-  }
-  // 자율주행시 주변안내 트리거
-  if (is_moving)
-  {
-    sequence_manager->check_sound_trigger(pcl_location);
-
-    if (sequence_manager->sound_trigger != 0)
-    {
-      sound_pub();
-    }
-  }
-}
 
   void CangoMaster::NaviCB(
       const cango_msgs::msg::Navigation::ConstSharedPtr &msg)
@@ -163,7 +164,7 @@ namespace cango_master
 
     robot_cmd.linear_speed = msg->linear_speed;
     robot_cmd.side_speed = msg->side_speed;
-    robot_cmd.ang_speed = msg -> ang_speed;
+    robot_cmd.ang_speed = msg->ang_speed;
   }
 
   void CangoMaster::LlmCB(
@@ -206,7 +207,6 @@ namespace cango_master
     }
     goalpoint = msg->goalpoint;
     waypoint_list = msg->waypoints;
-    
   }
 
   void CangoMaster::RobotStatusCB(
