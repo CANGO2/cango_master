@@ -1,4 +1,5 @@
 #include <sequence_manager.hpp>
+#include <future>
 
 namespace cango_master
 {
@@ -68,18 +69,13 @@ bool SequenceManager::create_full_path(const std::vector<Point> &path_list,
       RCLCPP_ERROR(node_->get_logger(), "Planner client is NULL!");
       return false;
   }
-
-  // 2. 서비스가 준비되었는지 확인 (절대 경로로 다시 시도)
-  if (!planner_service_client_->service_is_ready()) {
-      RCLCPP_WARN(node_->get_logger(), "Service /get_plan is not ready, waiting...");
-      if (!planner_service_client_->wait_for_service(std::chrono::milliseconds(500))) {
-          RCLCPP_ERROR(node_->get_logger(), "Planner service (/get_plan) still not available!");
-          return false;
-      }
-  }if (!planner_service_client_) {
-      RCLCPP_ERROR(node_->get_logger(), "Planner client is NULL!");
-      return false;
-  }
+RCLCPP_INFO(node_->get_logger(), "create_full_path() called");
+RCLCPP_INFO(node_->get_logger(), "Number of waypoints: %zu", path_list.size());
+  RCLCPP_INFO(
+      node_->get_logger(),
+      "Current location: x=%.3f, y=%.3f",
+      current_location.x,
+      current_location.y);
 
   // 2. 서비스가 준비되었는지 확인 (절대 경로로 다시 시도)
   if (!planner_service_client_->service_is_ready()) {
@@ -113,48 +109,62 @@ bool SequenceManager::create_full_path(const std::vector<Point> &path_list,
   }
 
   // 5. 각 지점 사이의 경로를 Planner에게 요청
+  // 5. 각 지점 사이의 경로를 Planner에게 요청
   for (size_t i = 0; i < all_points.size() - 1; ++i)
   {
+    RCLCPP_INFO(
+    node_->get_logger(),
+    "Requesting plan segment %zu: start(%.3f, %.3f) -> goal(%.3f, %.3f)",
+    i,
+    all_points[i].pose.position.x,
+    all_points[i].pose.position.y,
+    all_points[i + 1].pose.position.x,
+    all_points[i + 1].pose.position.y);
+
     auto request = std::make_shared<nav_msgs::srv::GetPlan::Request>();
     request->start = all_points[i];
     request->goal = all_points[i + 1];
     request->tolerance = 0.1f;
 
-    // 비동기 요청
     auto result_future = planner_service_client_->async_send_request(request);
 
-    // 서비스 응답 대기 (최대 1초 타임아웃 설정으로 노드 멈춤 방지)
-    if (rclcpp::spin_until_future_complete(node_->get_node_base_interface(),
-                                           result_future,
-                                           std::chrono::seconds(1)) ==
-        rclcpp::FutureReturnCode::SUCCESS)
+    auto status = result_future.wait_for(std::chrono::seconds(2));
+
+    if (status == std::future_status::ready)
     {
       auto response = result_future.get();
 
       if (response && !response->plan.poses.empty())
       {
-        // 경로 연결 시 중복되는 지점 제거 (이전 구간의 끝점 == 현재 구간의 시작점)
         if (!last_generated_path_.poses.empty())
         {
           last_generated_path_.poses.pop_back();
         }
 
-        last_generated_path_.poses.insert(last_generated_path_.poses.end(),
-                                          response->plan.poses.begin(),
-                                          response->plan.poses.end());
+        last_generated_path_.poses.insert(
+            last_generated_path_.poses.end(),
+            response->plan.poses.begin(),
+            response->plan.poses.end());
       }
       else
       {
-        RCLCPP_ERROR(node_->get_logger(), "Planner returned an empty plan between point %zu and %zu", i, i + 1);
+        RCLCPP_ERROR(
+            node_->get_logger(),
+            "Planner returned an empty plan between point %zu and %zu",
+            i, i + 1);
         return false;
       }
     }
     else
     {
-      RCLCPP_ERROR(node_->get_logger(), "Service call timeout or failed for plan segment %zu", i);
+      RCLCPP_ERROR(
+          node_->get_logger(),
+          "Service call timeout for plan segment %zu",
+          i);
       return false;
     }
   }
+
 
   RCLCPP_INFO(node_->get_logger(), "Successfully created full path with %zu poses", last_generated_path_.poses.size());
   return true;

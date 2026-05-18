@@ -72,58 +72,63 @@ namespace cango_master
   }
 
   void CangoMaster::StateChanger()
+{
+  motor_enable = true;
+
+  if (!auto_mode)
   {
-    //=========디버깅용!!!
     motor_enable = true;
-    //===============
+    auto_driving = false;
+    is_moving = false;
+  }
 
-    if (!auto_mode) // 조종기 수동
+  if (ask_map_available && !map_available)
+  {
+    RCLCPP_INFO(this->get_logger(), "Map search requested. Creating full path...");
+
+    sequence_manager->search_path(waypoint_list);
+
+    bool check = sequence_manager->create_full_path(
+        sequence_manager->path_list, pcl_location);
+
+    if (check)
     {
-      ask_map_available = false;
-      motor_enable = true;
+      RCLCPP_INFO(this->get_logger(), "Path created successfully.");
+      map_available = true;
+    }
+    else
+    {
+      RCLCPP_ERROR(this->get_logger(), "Path creation failed.");
       map_available = false;
-      auto_driving = false;
-      is_moving = false;
-    }
-    else if (auto_mode) // 조종기 자율모드
-    {
-      std::cout<<"map_available : "<<map_available<<" , ask_map_available : "<<ask_map_available<<" , auto_driving : "<<auto_driving<<std::endl;
-
-      if (ask_map_available && !map_available)
-      {
-        sequence_manager->search_path(waypoint_list);
-        bool check = sequence_manager->create_full_path(
-            sequence_manager->path_list, pcl_location);
-        if (check)
-        {
-          map_available = true;
-        }
-      }
-      else if (map_available && auto_driving)
-      {
-        bool success = sequence_manager->path_tracking();
-        if (success)
-        {
-          is_moving = true;
-          ask_map_available = false;
-          map_available = false;
-        }
-        else
-        {
-          RCLCPP_ERROR(this->get_logger(), "Failed to start path tracking.");
-        }
-      }
-    }
-    // 자율주행시 주변 안내 트리거 체크용
-    if (is_moving)
-    {
-      sequence_manager->check_sound_trigger(pcl_location);
-      if (sequence_manager->sound_trigger != 0)
-      {
-        sound_pub();
-      }
     }
   }
+
+  if (auto_mode && map_available && auto_driving)
+  {
+    bool success = sequence_manager->path_tracking();
+
+    if (success)
+    {
+      is_moving = true;
+      ask_map_available = false;
+      map_available = false;
+    }
+    else
+    {
+      RCLCPP_ERROR(this->get_logger(), "Failed to start path tracking.");
+    }
+  }
+  // 자율주행시 주변안내 트리거
+  if (is_moving)
+  {
+    sequence_manager->check_sound_trigger(pcl_location);
+
+    if (sequence_manager->sound_trigger != 0)
+    {
+      sound_pub();
+    }
+  }
+}
 
   void CangoMaster::NaviCB(
       const cango_msgs::msg::Navigation::ConstSharedPtr &msg)
@@ -276,6 +281,7 @@ namespace cango_master
       robot_control.side_speed = 0.0;
       robot_control.ang_speed = 0.0;
     }
+    robot_control.mode = auto_mode;
     robot_control.robot_up = robot_up;
     robot_control.vibration = vibration_flag;
     control_publisher->publish(robot_control);
