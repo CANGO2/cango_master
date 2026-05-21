@@ -16,7 +16,7 @@
     { "id": "hall_화장실_좌", "type": "facility", "coords": [7, 4] },
     { "id": "hall_화장실_우", "type": "facility", "coords": [7, 11] },
 
-    { "id": "c", "type": "facility", "coords": [10, 6] },
+    { "id": "hall_엘리베이터_좌", "type": "facility", "coords": [10, 6] },
     { "id": "hall_엘리베이터_우", "type": "facility", "coords": [10, 9] },
 
     { "id": "hall_계단_좌", "type": "facility", "coords": [10, 4] },
@@ -53,8 +53,7 @@
     { "from": "hall_321", "to": "hall_322" },
 
     { "from": "hall_left_top", "to": "hall_공터_center" },
-    { "from": "hall_공터_center", "to": "hall_right_mid" },
-    { "from": "hall_right_mid", "to": "hall_right_top" },
+    { "from": "hall_공터_center", "to": "hall_right_top" },
     { "from": "hall_right_top", "to": "hall_318" },
 
     { "from": "hall_left_mid", "to": "hall_화장실_좌" },

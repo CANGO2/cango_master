@@ -18,6 +18,7 @@ find_package(yaml-cpp REQUIRED)
 find_package(nav_msgs REQUIRED)
 find_package(nav2_msgs REQUIRED)
 find_package(tf2_ros REQUIRED)
+find_package(tf2 REQUIRED)
 find_package(tf2_geometry_msgs REQUIRED)
 
 set(TARGET_NAME cango_master)
@@ -43,12 +44,14 @@ ament_target_dependencies(${TARGET_NAME}
   nav_msgs
   nav2_msgs
   tf2_ros
+  tf2
   tf2_geometry_msgs
 )
 
 target_link_libraries(${TARGET_NAME}
   ${YAML_CPP_LIBRARIES}
 )
+
 
 install(TARGETS ${TARGET_NAME}
   DESTINATION lib/${PROJECT_NAME}

@@ -103,7 +103,7 @@ namespace cango_master
         ask_map_available = false;
       }
     }
-
+              
     if (auto_mode && map_available && auto_driving)
     {
       bool success = sequence_manager->path_tracking();
@@ -265,8 +265,8 @@ namespace cango_master
       if (auto_mode)
       {
         robot_control.linear_speed = nav2_cmd.linear_speed * robot_cmd.linear_speed;
-        robot_control.side_speed = nav2_cmd.side_speed * robot_cmd.linear_speed;
-        robot_control.ang_speed = nav2_cmd.ang_speed * robot_cmd.linear_speed;
+        robot_control.side_speed = 0.0;
+        robot_control.ang_speed = - nav2_cmd.ang_speed * robot_cmd.linear_speed * 10;
       }
       else
       {

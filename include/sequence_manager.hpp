@@ -23,6 +23,9 @@
 #include <nav2_msgs/action/navigate_to_pose.hpp>
 #include <nav2_msgs/srv/get_costmap.hpp>
 #include <nav2_msgs/srv/is_path_valid.hpp>
+#include <nav_msgs/msg/path.hpp>
+#include <tf2/LinearMath/Quaternion.h>
+#include <tf2_geometry_msgs/tf2_geometry_msgs.hpp>
 
 #include <tools.hpp>
 
@@ -59,6 +62,7 @@ private:
   rclcpp::Node *node_ = nullptr;
 
   void update_status();
+  void set_path_orientations(nav_msgs::msg::Path &path);
 
   cango_msgs::msg::TaskStatus prev_status;
   cango_msgs::msg::TaskStatus new_status;
@@ -69,7 +73,7 @@ private:
 
   rclcpp_action::Client<ComputePathToPose>::SharedPtr compute_path_client_;
   rclcpp_action::Client<FollowPath>::SharedPtr navigation_action_client_;
-
+  rclcpp::Publisher<nav_msgs::msg::Path>::SharedPtr full_path_pub_;
   nav_msgs::msg::Path last_generated_path_;
 
   geometry_msgs::msg::PoseStamped get_current_pose(

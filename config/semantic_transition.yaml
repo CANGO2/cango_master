@@ -54,8 +54,7 @@ edges:
 
   # ===== 가로 연결 =====
   - {from: "hall_left_top", to: "hall_공터_center"}
-  - {from: "hall_공터_center", to: "hall_right_mid"}
-  - {from: "hall_right_mid", to: "hall_right_top"}
+  - {from: "hall_공터_center", to: "hall_right_top"}
   - {from: "hall_right_top", to: "hall_318"}
 
   - {from: "hall_left_mid", to: "hall_화장실_좌"}
