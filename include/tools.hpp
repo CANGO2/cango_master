@@ -13,7 +13,7 @@ static inline T clip(T now_val, T min_val, T max_val) {
   return max_val < now_val ? max_val : (min_val > now_val ? min_val : now_val);
 }
 
-struct Point { double x; double y; };
+struct Point { double x; double y; double theta = 0.0;};
 
 class calc_coordinate {
 public:

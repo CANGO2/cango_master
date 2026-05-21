@@ -5,6 +5,7 @@
 #include <queue>
 #include <string>
 #include <vector>
+#include <cstddef>
 
 #include <rclcpp/rclcpp.hpp>
 #include <rclcpp_action/rclcpp_action.hpp>
@@ -23,7 +24,7 @@
 #include <nav2_msgs/action/navigate_to_pose.hpp>
 #include <nav2_msgs/srv/get_costmap.hpp>
 #include <nav2_msgs/srv/is_path_valid.hpp>
-#include <nav_msgs/msg/path.hpp>
+
 #include <tf2/LinearMath/Quaternion.h>
 #include <tf2_geometry_msgs/tf2_geometry_msgs.hpp>
 
@@ -54,6 +55,9 @@ public:
 
   bool path_tracking();
 
+  geometry_msgs::msg::Twist update_pure_pursuit_cmd(
+      const Point &current_location);
+
   void check_sound_trigger(const Point &current_location);
 
   std::vector<Point> path_list;
@@ -62,7 +66,20 @@ private:
   rclcpp::Node *node_ = nullptr;
 
   void update_status();
+
   void set_path_orientations(nav_msgs::msg::Path &path);
+
+  double normalize_angle(double angle);
+
+  double get_yaw_from_pose(
+      const geometry_msgs::msg::PoseStamped &pose);
+
+  size_t find_nearest_index(
+      const Point &current_location);
+
+  size_t find_lookahead_index(
+      size_t nearest_idx,
+      const Point &current_location);
 
   cango_msgs::msg::TaskStatus prev_status;
   cango_msgs::msg::TaskStatus new_status;
@@ -72,9 +89,16 @@ private:
   rclcpp::CallbackGroup::SharedPtr action_callback_group_;
 
   rclcpp_action::Client<ComputePathToPose>::SharedPtr compute_path_client_;
+
   rclcpp_action::Client<FollowPath>::SharedPtr navigation_action_client_;
+
   rclcpp::Publisher<nav_msgs::msg::Path>::SharedPtr full_path_pub_;
+
   nav_msgs::msg::Path last_generated_path_;
+
+  bool tracking_active_ = false;
+
+  size_t tracking_index_ = 0;
 
   geometry_msgs::msg::PoseStamped get_current_pose(
       const Point &current_location);

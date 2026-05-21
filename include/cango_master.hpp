@@ -15,82 +15,93 @@
 #include "cango_msgs/msg/sound_request.hpp"
 #include "std_msgs/msg/float32.hpp"
 #include "std_msgs/msg/float32_multi_array.hpp"
+#include <tf2_ros/buffer.h>
+#include <tf2_ros/transform_listener.h>
+#include <geometry_msgs/msg/transform_stamped.hpp>
 
-namespace cango_master {
+namespace cango_master
+{
 
-class CangoMaster : public rclcpp::Node {
- public:
-  CangoMaster();
-  bool auto_mode = false; // 자율주행 알고리즘 활성화
-  bool auto_driving = false; // 실제 자율주행 여부 
-  bool robot_up = false;
-  bool vibration_flag = false;
-  float obs_safety = 0.0;
-  float obs_heading = 0.0;
- private:
-  void setup();
-  void run();
-  void reset();
-  void StateChanger();
-  ////callback functions ///////
-  void NaviCB(const cango_msgs::msg::Navigation::ConstSharedPtr& msg);
-  void LlmCB(const cango_msgs::msg::LlmRequest::ConstSharedPtr& msg);
-  void HandCB(const cango_msgs::msg::RobotControl::ConstSharedPtr& msg);
-  void RobotStatusCB(const cango_msgs::msg::RobotStatus::ConstSharedPtr& msg);
-  void Nav2CB(const geometry_msgs::msg::Twist::SharedPtr msg);
-  void SafeCB(const std_msgs::msg::Float32MultiArray::ConstSharedPtr& msg);
-  void timerCallback();
+    class CangoMaster : public rclcpp::Node
+    {
+    public:
+        CangoMaster();
 
-  void task_pub();
-  void sound_pub();
-  void llm_pub();
-  void control_pub();
+        std::shared_ptr<tf2_ros::Buffer> tf_buffer_;
+        std::shared_ptr<tf2_ros::TransformListener> tf_listener_;
 
+        bool update_robot_pose_from_tf();
 
-  bool ask_map_available = false;
-  bool map_available = false;
-  bool is_moving = false; //경로 추적하면서 사운드 트리거하려고
-  bool is_request = false;
-  bool is_user_interrupted = false;
-  bool motor_enable = false;
+        bool auto_mode = false;    // 자율주행 알고리즘 활성화
+        bool auto_driving = false; // 실제 자율주행 여부
+        bool robot_up = false;
+        bool vibration_flag = false;
+        float obs_safety = 0.0;
+        float obs_heading = 0.0;
 
-  cango_msgs::msg::TaskStatus now_status;
-  cango_msgs::msg::SoundRequest sound_request;
-  cango_msgs::msg::LlmRequest llm_request;
+    private:
+        void setup();
+        void run();
+        void reset();
+        void StateChanger();
+        ////callback functions ///////
+        void NaviCB(const cango_msgs::msg::Navigation::ConstSharedPtr &msg);
+        void LlmCB(const cango_msgs::msg::LlmRequest::ConstSharedPtr &msg);
+        void HandCB(const cango_msgs::msg::RobotControl::ConstSharedPtr &msg);
+        void RobotStatusCB(const cango_msgs::msg::RobotStatus::ConstSharedPtr &msg);
+        void Nav2CB(const geometry_msgs::msg::Twist::SharedPtr msg);
+        void SafeCB(const std_msgs::msg::Float32MultiArray::ConstSharedPtr &msg);
+        void timerCallback();
 
-  ////////// tools //////////
-  calc_coordinate coordinate_converter;
-  robot_command robot_cmd;
-  robot_command nav2_cmd;
-  pd_controller pd_lin, pd_ang;
-  std::unique_ptr<SequenceManager> sequence_manager;
+        void task_pub();
+        void sound_pub();
+        void llm_pub();
+        void control_pub();
 
-  ///////////////navigation//////////////////
-  std::string goalpoint;
-  std::vector<std::string>
-      waypoint_list;   //목적지 리스트, sequence manager에서 관리
-  Point pcl_location;  //현재 위치, sequence manager
-  std::string semantic_location1,
-      semantic_location2;  // semantic map에서의 위치
+        bool ask_map_available = false;
+        bool map_available = false;
+        bool is_moving = false; // 경로 추적하면서 사운드 트리거하려고
+        bool is_request = false;
+        bool is_user_interrupted = false;
+        bool motor_enable = true;
 
- private:
-  rclcpp::Subscription<cango_msgs::msg::Navigation>::SharedPtr
-      navi_subscription;
-  rclcpp::Subscription<cango_msgs::msg::RobotControl>::SharedPtr
-      hand_subscription;
-  rclcpp::Subscription<cango_msgs::msg::LlmRequest>::SharedPtr llm_subscription;
-  rclcpp::Subscription<std_msgs::msg::Float32MultiArray>::SharedPtr safe_subscription;
-  rclcpp::Publisher<cango_msgs::msg::TaskStatus>::SharedPtr master_publisher;
-  rclcpp::Publisher<cango_msgs::msg::Navigation>::SharedPtr navi_publisher;
-  rclcpp::Publisher<cango_msgs::msg::LlmRequest>::SharedPtr llm_publisher;
-  rclcpp::Publisher<cango_msgs::msg::RobotControl>::SharedPtr control_publisher;
-  rclcpp::Publisher<cango_msgs::msg::SoundRequest>::SharedPtr sound_publisher;
-  rclcpp::TimerBase::SharedPtr timer_;
-  rclcpp::Subscription<geometry_msgs::msg::Twist>::SharedPtr nav2_cmd_subscription;
+        cango_msgs::msg::TaskStatus now_status;
+        cango_msgs::msg::SoundRequest sound_request;
+        cango_msgs::msg::LlmRequest llm_request;
 
-  /////yaml parameter//////
-    double sound_trigger_distance;
-    std::string semantic_config_path;
-};
+        ////////// tools //////////
+        calc_coordinate coordinate_converter;
+        robot_command robot_cmd;
+        robot_command nav2_cmd;
+        pd_controller pd_lin, pd_ang;
+        std::unique_ptr<SequenceManager> sequence_manager;
 
-}  // namespace cango_master
+        ///////////////navigation//////////////////
+        std::string goalpoint;
+        std::vector<std::string>
+            waypoint_list;  // 목적지 리스트, sequence manager에서 관리
+        Point pcl_location; // 현재 위치, sequence manager
+        std::string semantic_location1,
+            semantic_location2; // semantic map에서의 위치
+
+    private:
+        rclcpp::Subscription<cango_msgs::msg::Navigation>::SharedPtr
+            navi_subscription;
+        rclcpp::Subscription<cango_msgs::msg::RobotControl>::SharedPtr
+            hand_subscription;
+        rclcpp::Subscription<cango_msgs::msg::LlmRequest>::SharedPtr llm_subscription;
+        rclcpp::Subscription<std_msgs::msg::Float32MultiArray>::SharedPtr safe_subscription;
+        rclcpp::Publisher<cango_msgs::msg::TaskStatus>::SharedPtr master_publisher;
+        rclcpp::Publisher<cango_msgs::msg::Navigation>::SharedPtr navi_publisher;
+        rclcpp::Publisher<cango_msgs::msg::LlmRequest>::SharedPtr llm_publisher;
+        rclcpp::Publisher<cango_msgs::msg::RobotControl>::SharedPtr control_publisher;
+        rclcpp::Publisher<cango_msgs::msg::SoundRequest>::SharedPtr sound_publisher;
+        rclcpp::TimerBase::SharedPtr timer_;
+        rclcpp::Subscription<geometry_msgs::msg::Twist>::SharedPtr nav2_cmd_subscription;
+
+        /////yaml parameter//////
+        double sound_trigger_distance;
+        std::string semantic_config_path;
+    };
+
+} // namespace cango_master
