@@ -1,6 +1,8 @@
 #include "cango_master.hpp"
 
+#include <algorithm>
 #include <chrono>
+#include <cmath>
 #include <functional>
 
 #include <tf2/LinearMath/Quaternion.h>
@@ -57,6 +59,11 @@ namespace cango_master
         this->create_subscription<std_msgs::msg::Float32MultiArray>(
             "/obs_distance", 10,
             std::bind(&CangoMaster::SafeCB, this, std::placeholders::_1));
+
+    nav2_cmd_subscription =
+        this->create_subscription<geometry_msgs::msg::Twist>(
+            "/cmd_vel", 10,
+            std::bind(&CangoMaster::Nav2CB, this, std::placeholders::_1));
 
     llm_subscription =
         this->create_subscription<cango_msgs::msg::LlmRequest>(
@@ -272,6 +279,9 @@ namespace cango_master
     robot_cmd.linear_speed = msg->linear_speed;
     robot_cmd.side_speed = msg->side_speed;
     robot_cmd.ang_speed = msg->ang_speed;
+    hand_linear_active = std::fabs(msg->linear_speed) > 1e-3;
+    hand_cmd_received = true;
+    last_hand_cmd_time = this->now();
   }
 
   void CangoMaster::LlmCB(
@@ -291,6 +301,8 @@ namespace cango_master
       is_user_interrupted = true;
       auto_driving = false;
       is_moving = false;
+      ask_map_available = false;
+      map_available = false;
 
       if (sequence_manager)
       {
@@ -309,6 +321,8 @@ namespace cango_master
       is_user_interrupted = false;
       auto_driving = false;
       is_moving = false;
+      ask_map_available = false;
+      map_available = false;
 
       if (sequence_manager)
       {
@@ -323,13 +337,17 @@ namespace cango_master
       motor_enable = true;
     }
 
-    if (msg->map_search)
+    if (msg->map_search == 1)
     {
       ask_map_available = true;
-    }
-    else
-    {
-      ask_map_available = false;
+      map_available = false;
+      auto_driving = false;
+      is_moving = false;
+
+      if (sequence_manager)
+      {
+        sequence_manager->reset();
+      }
     }
 
     goalpoint = msg->goalpoint;
@@ -339,6 +357,17 @@ namespace cango_master
   void CangoMaster::RobotStatusCB(
       const cango_msgs::msg::RobotStatus::ConstSharedPtr &msg)
   {
+    (void)msg;
+  }
+
+  void CangoMaster::Nav2CB(
+      const geometry_msgs::msg::Twist::SharedPtr msg)
+  {
+    nav2_cmd.linear_speed = msg->linear.x;
+    nav2_cmd.side_speed = msg->linear.y;
+    nav2_cmd.ang_speed = msg->angular.z;
+    nav2_cmd_received = true;
+    last_nav2_cmd_time = this->now();
   }
 
   void CangoMaster::SafeCB(
@@ -396,21 +425,74 @@ namespace cango_master
     {
       if (auto_mode)
       {
-        geometry_msgs::msg::Twist pp_cmd;
+        bool nav2_cmd_fresh = false;
 
-        if (sequence_manager)
+        if (nav2_cmd_received)
         {
-          pp_cmd =
-              sequence_manager->update_pure_pursuit_cmd(pcl_location);
+          nav2_cmd_fresh =
+              (this->now() - last_nav2_cmd_time).seconds() < 0.5;
         }
 
-        robot_control.linear_speed =
-            pp_cmd.linear.x * robot_cmd.linear_speed * 3;
+        bool hand_cmd_fresh = false;
 
-        robot_control.side_speed = 0.0;
+        if (hand_cmd_received)
+        {
+          hand_cmd_fresh =
+              (this->now() - last_hand_cmd_time).seconds() < 0.5;
+        }
 
-        robot_control.ang_speed =
-            -pp_cmd.angular.z * robot_cmd.linear_speed * 3;
+        if (nav2_cmd_fresh && hand_cmd_fresh && hand_linear_active)
+        {
+          const double hand_request =
+              std::clamp(std::fabs(robot_cmd.linear_speed), 0.0, 1.0);
+
+          const double nav2_linear = nav2_cmd.linear_speed;
+          const double nav2_side = -nav2_cmd.side_speed;
+          const double nav2_angular = -nav2_cmd.ang_speed;
+
+          double linear_speed = 0.0;
+          double side_speed = 0.0;
+          double angular_speed = 0.0;
+
+          if (hand_request >= 0.3)
+          {
+            const double min_robot_command = 0.3;
+            const double nav2_forward = std::max(0.0, nav2_linear);
+            const double nav2_max =
+                std::max({
+                    std::fabs(nav2_forward),
+                    std::fabs(nav2_side),
+                    std::fabs(nav2_angular)});
+
+            if (nav2_max > 1e-3)
+            {
+              const double target_max =
+                  std::clamp(nav2_max, min_robot_command, hand_request);
+
+              const double scale = target_max / nav2_max;
+
+              linear_speed = nav2_forward * scale;
+              side_speed = nav2_side * scale;
+              angular_speed = nav2_angular * scale;
+
+              if (nav2_linear < 0.0)
+              {
+                linear_speed =
+                    std::max(nav2_linear, -0.02);
+              }
+            }
+          }
+
+          robot_control.linear_speed = linear_speed;
+          robot_control.side_speed = side_speed;
+          robot_control.ang_speed = angular_speed;
+        }
+        else
+        {
+          robot_control.linear_speed = 0.0;
+          robot_control.side_speed = 0.0;
+          robot_control.ang_speed = 0.0;
+        }
       }
       else
       {

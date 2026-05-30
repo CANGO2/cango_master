@@ -64,6 +64,11 @@ namespace cango_master
         bool is_request = false;
         bool is_user_interrupted = false;
         bool motor_enable = true;
+        bool nav2_cmd_received = false;
+        bool hand_cmd_received = false;
+        bool hand_linear_active = false;
+        rclcpp::Time last_nav2_cmd_time;
+        rclcpp::Time last_hand_cmd_time;
 
         cango_msgs::msg::TaskStatus now_status;
         cango_msgs::msg::SoundRequest sound_request;

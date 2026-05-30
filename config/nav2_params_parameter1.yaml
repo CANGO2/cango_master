@@ -1,10 +1,10 @@
-# amcl:
-#   ros__parameters:
-#     use_sim_time: false
-#     global_frame_id: "map"
-#     odom_frame_id: "odom"
-#     base_frame_id: "base_link"
-#     tf_broadcast: false
+amcl:
+  ros__parameters:
+    use_sim_time: false
+    global_frame_id: "map"
+    odom_frame_id: "odom"
+    base_frame_id: "base_link"
+    tf_broadcast: false
 
 # amcl:
 #   ros__parameters:
@@ -164,7 +164,7 @@ controller_server:
       max_samples: 500                     # TEB trajectory 최대 pose 개수
       global_plan_overwrite_orientation: true # global path의 pose 방향을 TEB가 덮어쓸지 여부
       allow_init_with_backwards_motion: false  # 초기 궤적을 후진으로 시작하는 것을 허용할지 여부
-      max_global_plan_lookahead_dist: 2.4  # TEB가 global path를 앞쪽으로 얼마나 볼지. 장애물을 더 멀리서 보고 회피
+      max_global_plan_lookahead_dist: 1.4  # TEB가 global path를 앞쪽으로 얼마나 볼지. 회피 후 과도한 우회를 줄임
       global_plan_viapoint_sep: 0.2        # global path에서 via-point를 뽑는 간격. 작을수록 경로선에 더 빨리 복귀
       via_points_ordered: true             # via-point 순서를 global path 순서대로 유지
       global_plan_prune_distance: 1.0      # 로봇 뒤쪽 global path를 잘라내는 거리
@@ -173,28 +173,25 @@ controller_server:
       control_look_ahead_poses: 2          # cmd_vel 계산 시 몇 번째 앞 pose를 볼지. 회피 후 정렬 반응을 빠르게 함
       publish_feedback: true              # /teb_feedback publish 여부
 
-      max_vel_x: 0.8                       # TEB가 허용하는 최대 전진속도
+      max_vel_x: 0.5                       # TEB가 허용하는 최대 전진속도
       max_vel_x_backwards: 0.02            # 최대 후진속도. 거의 후진 금지에 가까움
       max_vel_y: 0.0                       # y축 속도. diff/ackermann처럼 옆이동 없으면 0
-      max_vel_theta: 0.8                   # 최대 회전속도
+      max_vel_theta: 0.5                   # 최대 회전속도
       acc_lim_x: 0.25                      # 전진 가속도 제한
       acc_lim_y: 0.0                       # y축 가속도 제한
       acc_lim_theta: 0.45                  # 회전 가속도 제한
 
       footprint_model:
-        type: "polygon"
-        vertices: "[[0.40, 0.20], [0.40, -0.20], [-0.50, -0.35], [-0.50, 0.35]]"
-      # footprint_model:
-      #   type: "circular"                   # TEB 충돌 검사에 쓸 로봇 footprint 형태
-      #   radius: 0.30                       # 로봇 반경. 좁은 통로와 장애물 회피 사이 절충
+        type: "circular"                   # TEB 충돌 검사에 쓸 로봇 footprint 형태
+        radius: 0.30                       # 로봇 반경. 좁은 통로와 장애물 회피 사이 절충
 
       free_goal_vel: false                 # goal에서 속도를 0으로 만들지 여부. false면 정지 도착
 
-      min_obstacle_dist: 0.15              # TEB가 장애물과 유지하려는 최소 거리. 좁은 통로 통과성을 위해 완화
-      inflation_dist: 0.28                 # 장애물 비용이 퍼지는 거리. 과도하게 막지 않으면서 조금 더 일찍 회피
+      min_obstacle_dist: 0.08              # TEB가 장애물과 유지하려는 최소 거리. 과도한 회피를 완화
+      inflation_dist: 0.25                 # 장애물 비용이 퍼지는 거리. 멀리서 회피하되 회전만 하는 현상 완화
       include_costmap_obstacles: true      # local costmap 장애물을 TEB 최적화에 포함
       costmap_obstacles_behind_robot_dist: 0.0 # 로봇 뒤쪽 장애물을 얼마나 볼지. 크면 후방 장애물도 제약이 됨
-      obstacle_poses_affected: 10          # 장애물 하나가 trajectory pose 몇 개에 영향을 줄지. 더 멀리서 회피를 준비
+      obstacle_poses_affected: 5           # 장애물 하나가 trajectory pose 몇 개에 영향을 줄지. 회피를 부드럽게 분산
       include_dynamic_obstacles: false     # 동적 장애물 예측 사용 여부. 현재 pointcloud costmap이면 false
 
       no_inner_iterations: 5               # TEB 내부 optimizer 반복 횟수
@@ -212,8 +209,8 @@ controller_server:
       weight_optimaltime: 0.3              # 빠른 시간 궤적을 선호하는 정도. 높으면 급해질 수 있음
       weight_shortest_path: 0.0            # 짧은 경로 선호 비용
       weight_obstacle: 40.0                # 장애물 회피 비용. 회피는 유지하되 과도한 선회 완화
-      weight_inflation: 3.0                # inflation 영역 비용. 장애물 주변 비용을 조금 더 일찍 반영
-      weight_viapoint: 25.0                # global path via-point 추종 비용. 장애물 회피 여유를 위해 완화
+      weight_inflation: 2.0                # inflation 영역 비용. 멀리서부터 반응하되 너무 보수적이지 않게 조정
+      weight_viapoint: 50.0                # global path via-point 추종 비용. 회피 후 원래 경로로 빠르게 복귀
       weight_adapt_factor: 2.0             # 반복 최적화 때 weight를 키우는 비율
 
       enable_homotopy_class_planning: false # 여러 우회 경로 후보를 동시에 탐색할지. false가 안정/가벼움
@@ -245,13 +242,13 @@ local_costmap:
       inflation_layer:
         plugin: "nav2_costmap_2d::InflationLayer"
         cost_scaling_factor: 8.0           # 클수록 장애물 비용이 빨리 감소. 높이면 덜 보수적
-        inflation_radius: 0.05             # 장애물 비용을 퍼뜨리는 반경. 좁은 통로 통과를 위해 축소
+        inflation_radius: 0.02             # 장애물 비용을 퍼뜨리는 반경. 좁은 통로 통과를 위해 축소
       stvl_layer:
         plugin: "spatio_temporal_voxel_layer/SpatioTemporalVoxelLayer"
         enabled: true                      # 시간 decay가 있는 3D obstacle layer
-        voxel_decay: 1.0                   # 장애물 잔상을 짧게 유지해서 뒤따르는 사람/노이즈 잔상을 줄임
+        voxel_decay: 2.0                   # 유리처럼 근거리 포인트가 끊기는 장애물을 잠깐 유지
         decay_model: 0                     # 0=linear, 1=exponential, -1=persistent
-        voxel_size: 0.05                   # voxel을 키워 pointcloud obstacle 밀도를 낮춤
+        voxel_size: 0.05                   # voxel 해상도. 유리의 듬성한 포인트를 안정적으로 반영
         track_unknown_space: false         # unknown space를 따로 막지 않음
         mark_threshold: 1                  # 유리처럼 희박한 포인트도 장애물로 반영
         update_footprint_enabled: false    # footprint 기반 clearing으로 유리 장애물이 지워지는 것을 방지
@@ -267,14 +264,14 @@ local_costmap:
           data_type: "PointCloud2"
           marking: true
           clearing: false
-          obstacle_range: 1.5              # obstacle marking 최대 거리
+          obstacle_range: 2.0              # obstacle marking 최대 거리
           min_obstacle_height: 0.05        # 바닥 노이즈 제거용 최소 높이
           max_obstacle_height: 2.0         # 장애물로 볼 최대 높이
           expected_update_rate: 0.0
           observation_persistence: 0.0
           inf_is_valid: false
           filter: "voxel"
-          voxel_min_points: 3
+          voxel_min_points: 1
           clear_after_reading: true
         body_cloud_clear:
           topic: /fastlio2/body_cloud      # 같은 pointcloud로 frustum clearing 수행

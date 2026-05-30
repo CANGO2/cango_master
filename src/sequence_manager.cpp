@@ -26,12 +26,23 @@ namespace cango_master
             "/compute_path_to_pose",
             action_callback_group_);
 
+    navigation_action_client_ =
+        rclcpp_action::create_client<FollowPath>(
+            node_,
+            "/follow_path",
+            action_callback_group_);
+
     full_path_pub_ =
         node_->create_publisher<nav_msgs::msg::Path>("/cango/full_path", 10);
   }
 
   void SequenceManager::reset()
   {
+    if (navigation_action_client_)
+    {
+      navigation_action_client_->async_cancel_all_goals();
+    }
+
     tracking_active_ = false;
     tracking_index_ = 0;
   }
@@ -378,12 +389,86 @@ namespace cango_master
       return false;
     }
 
+    if (!navigation_action_client_)
+    {
+      RCLCPP_ERROR(
+          node_->get_logger(),
+          "FollowPath action client is NULL.");
+      return false;
+    }
+
+    if (!navigation_action_client_->wait_for_action_server(
+            std::chrono::seconds(5)))
+    {
+      RCLCPP_ERROR(
+          node_->get_logger(),
+          "Action server /follow_path is not available.");
+      return false;
+    }
+
+    nav_msgs::msg::Path tracking_path = last_generated_path_;
+
+    tracking_path.header.stamp.sec = 0;
+    tracking_path.header.stamp.nanosec = 0;
+
+    for (auto &pose : tracking_path.poses)
+    {
+      pose.header.stamp = tracking_path.header.stamp;
+    }
+
+    auto goal_msg = FollowPath::Goal();
+    goal_msg.path = tracking_path;
+    goal_msg.controller_id = "FollowPath";
+    goal_msg.goal_checker_id = "general_goal_checker";
+
+    auto send_goal_options =
+        rclcpp_action::Client<FollowPath>::SendGoalOptions();
+
+    send_goal_options.goal_response_callback =
+        [this](const GoalHandleFollowPath::SharedPtr &goal_handle)
+        {
+          if (!goal_handle)
+          {
+            tracking_active_ = false;
+            tracking_index_ = 0;
+
+            RCLCPP_ERROR(
+                node_->get_logger(),
+                "Nav2 FollowPath goal was rejected.");
+          }
+        };
+
+    send_goal_options.result_callback =
+        [this](const GoalHandleFollowPath::WrappedResult &result)
+        {
+          tracking_active_ = false;
+          tracking_index_ = 0;
+
+          if (result.code == rclcpp_action::ResultCode::SUCCEEDED)
+          {
+            RCLCPP_INFO(
+                node_->get_logger(),
+                "Nav2 FollowPath finished successfully.");
+          }
+          else
+          {
+            RCLCPP_WARN(
+                node_->get_logger(),
+                "Nav2 FollowPath finished with result code: %d",
+                static_cast<int>(result.code));
+          }
+        };
+
+    navigation_action_client_->async_send_goal(
+        goal_msg,
+        send_goal_options);
+
     tracking_active_ = true;
     tracking_index_ = 0;
 
     RCLCPP_INFO(
         node_->get_logger(),
-        "Pure Pursuit tracking started. poses=%zu",
+        "Nav2 FollowPath tracking started. poses=%zu",
         last_generated_path_.poses.size());
 
     return true;
@@ -422,6 +507,8 @@ namespace cango_master
       size_t nearest_idx,
       const Point &current_location)
   {
+    (void)nearest_idx;
+
     const double lookahead_dist = 1.0;
 
     size_t best_idx = tracking_index_;
