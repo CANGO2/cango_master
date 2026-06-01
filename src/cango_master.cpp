@@ -76,7 +76,7 @@ namespace cango_master
 
     master_publisher =
         this->create_publisher<cango_msgs::msg::TaskStatus>(
-            "/task_status", 10);
+            "/cango/task_status", 10);
 
     llm_publisher =
         this->create_publisher<cango_msgs::msg::LlmRequest>(
@@ -84,11 +84,11 @@ namespace cango_master
 
     navi_publisher =
         this->create_publisher<cango_msgs::msg::Navigation>(
-            "/master2navi", 10);
+            "/cango/master2navi", 10);
 
     control_publisher =
         this->create_publisher<cango_msgs::msg::RobotControl>(
-            "/master2control", 10);
+            "/cango/master2control", 10);
 
     timer_ =
         this->create_wall_timer(
@@ -503,7 +503,7 @@ namespace cango_master
             robot_cmd.side_speed * obs_safety;
 
         robot_control.ang_speed =
-            robot_cmd.ang_speed * obs_safety + obs_heading;
+            robot_cmd.ang_speed* obs_safety + obs_heading;
       }
     }
     else
@@ -516,6 +516,13 @@ namespace cango_master
     robot_control.mode = auto_mode;
     robot_control.robot_up = robot_up;
     robot_control.vibration = vibration_flag;
+
+    
+    if(robot_control.mode == 1 && robot_control.ang_speed !=0.0 && robot_control.linear_speed < 0.1){
+      // if(robot_control.ang_speed>0.0){robot_control.ang_speed = 0.5;}
+      // else if (robot_control.ang_speed<0.0){robot_control.ang_speed = -0.5;}
+      robot_control.side_speed = 0.9 * robot_control.ang_speed;
+    }
 
     control_publisher->publish(robot_control);
 
