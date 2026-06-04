@@ -459,10 +459,9 @@ namespace cango_master
             const double min_robot_command = 0.3;
             const double nav2_forward = std::max(0.0, nav2_linear);
             const double nav2_max =
-                std::max({
-                    std::fabs(nav2_forward),
-                    std::fabs(nav2_side),
-                    std::fabs(nav2_angular)});
+                std::max({std::fabs(nav2_forward),
+                          std::fabs(nav2_side),
+                          std::fabs(nav2_angular)});
 
             if (nav2_max > 1e-3)
             {
@@ -503,7 +502,7 @@ namespace cango_master
             robot_cmd.side_speed * obs_safety;
 
         robot_control.ang_speed =
-            robot_cmd.ang_speed* obs_safety + obs_heading;
+            robot_cmd.ang_speed * obs_safety + obs_heading;
       }
     }
     else
@@ -517,19 +516,28 @@ namespace cango_master
     robot_control.robot_up = robot_up;
     robot_control.vibration = vibration_flag;
 
-    
-    if(robot_control.mode == 1 && robot_control.ang_speed !=0.0 && robot_control.linear_speed < 0.1){
-      // if(robot_control.ang_speed>0.0){robot_control.ang_speed = 0.5;}
-      // else if (robot_control.ang_speed<0.0){robot_control.ang_speed = -0.5;}
-      robot_control.side_speed = 0.9 * robot_control.ang_speed;
-    }
+    auto is_target_node = [](const std::string &s)
+    {
+      return s == "hall_엘리베이터_좌" ||
+             s == "hall_엘리베이터_우" ||
+             s == "hall_계단_좌" ||
+             s == "hall_계단_우" ||
+             s == "hall_공터_center";
+    };
 
+    if (robot_control.mode == 1 && robot_control.ang_speed != 0.0 && robot_control.linear_speed < 0.1)
+    {
+      if (is_target_node(semantic_location1) || is_target_node(semantic_location2))
+      {
+        robot_control.side_speed = 0.9 * robot_control.ang_speed;
+      }
+    }
     control_publisher->publish(robot_control);
 
     vibration_flag = false;
   }
 
-}  // namespace cango_master
+} // namespace cango_master
 
 int main(int argc, char *argv[])
 {

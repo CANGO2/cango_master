@@ -2,6 +2,7 @@
 #define CANGO_MASTER_INCLUDE_SEQUENCE_MANAGER_HPP_
 
 #include <memory>
+#include <array>
 #include <queue>
 #include <string>
 #include <vector>
@@ -85,6 +86,7 @@ private:
   cango_msgs::msg::TaskStatus new_status;
 
   calc_coordinate coordinate_converter;
+  std::array<Point, 6> hall_trigger_points_;
 
   rclcpp::CallbackGroup::SharedPtr action_callback_group_;
 

@@ -17,6 +17,19 @@ namespace cango_master
   {
     coordinate_converter.load_semantic_map(yaml_path);
 
+    const std::array<std::string, 6> hall_trigger_ids = {
+        "hall_left_top",
+        "hall_left_mid",
+        "hall_left_bottom",
+        "hall_right_top",
+        "hall_right_mid",
+        "hall_right_bottom"};
+
+    for (size_t i = 0; i < hall_trigger_ids.size(); ++i)
+    {
+      coordinate_converter.id2pcd(hall_trigger_ids[i], hall_trigger_points_[i]);
+    }
+
     action_callback_group_ =
         node_->create_callback_group(rclcpp::CallbackGroupType::Reentrant);
 
@@ -662,11 +675,21 @@ namespace cango_master
         {
           detected_trigger = 2; //목적지 부근
         }
-      }
-      else if (dist < 0.1)
+      }    }
+
+    if (detected_trigger == 0)
+    {
+      for (const auto &pt : hall_trigger_points_)
       {
-        detected_trigger = 1; //현재위치
-        break;
+        double dist = std::hypot(
+            current_location.x - pt.x,
+            current_location.y - pt.y);
+
+        if (dist < 4.0)
+        {
+          detected_trigger = 1;
+          break;
+        }
       }
     }
 
