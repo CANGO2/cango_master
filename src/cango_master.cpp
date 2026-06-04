@@ -520,8 +520,6 @@ namespace cango_master
     {
       return s == "hall_엘리베이터_좌" ||
              s == "hall_엘리베이터_우" ||
-             s == "hall_계단_좌" ||
-             s == "hall_계단_우" ||
              s == "hall_공터_center";
     };
 
@@ -529,6 +527,12 @@ namespace cango_master
     {
       if (is_target_node(semantic_location1) || is_target_node(semantic_location2))
       {
+        if(robot_control.ang_speed>=0.0){
+          robot_control.ang_speed = 0.5;
+        }
+        else if(robot_control.ang_speed<0.0){
+          robot_control.ang_speed = -0.5;
+        }
         robot_control.side_speed = 0.9 * robot_control.ang_speed;
       }
     }

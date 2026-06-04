@@ -211,7 +211,7 @@ controller_server:
       weight_kinematics_turning_radius: 1.0 # 최소 회전반경 관련 비용
       weight_optimaltime: 0.3              # 빠른 시간 궤적을 선호하는 정도. 높으면 급해질 수 있음
       weight_shortest_path: 0.0            # 짧은 경로 선호 비용
-      weight_obstacle: 40.0                # 장애물 회피 비용. 회피는 유지하되 과도한 선회 완화
+      weight_obstacle: 25.0                # 장애물 회피 비용. 회피는 유지하되 과도한 선회 완화
       weight_inflation: 3.0                # inflation 영역 비용. 장애물 주변 비용을 조금 더 일찍 반영
       weight_viapoint: 25.0                # global path via-point 추종 비용. 장애물 회피 여유를 위해 완화
       weight_adapt_factor: 2.0             # 반복 최적화 때 weight를 키우는 비율

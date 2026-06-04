@@ -685,7 +685,7 @@ namespace cango_master
             current_location.x - pt.x,
             current_location.y - pt.y);
 
-        if (dist < 4.0)
+        if (dist < 0.5)
         {
           detected_trigger = 1;
           break;
