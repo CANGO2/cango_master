@@ -14,17 +14,38 @@ def generate_launch_description():
     master_params = os.path.join(pkg_dir, "config", "params.yaml")
     nav2_params = os.path.join(pkg_dir, "config", "nav2_params.yaml")
     
-    # 2. Nav2 공식 브링업 포함
+    # 2. Nav2 navigation만 실행하고, AMCL은 FASTLIO localizer와 TF가 겹치지 않도록 제외
     nav2_stack = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(
-            os.path.join(nav2_bringup_dir, "launch", "bringup_launch.py")
+            os.path.join(nav2_bringup_dir, "launch", "navigation_launch.py")
         ),
         launch_arguments={
-            "map": map_config,
             "params_file": nav2_params,
-            "master_params_file": master_params,
             "autostart": "true",
         }.items(),
+    )
+
+    map_server_node = Node(
+        package="nav2_map_server",
+        executable="map_server",
+        name="map_server",
+        output="screen",
+        parameters=[
+            nav2_params,
+            {"yaml_filename": map_config},
+        ],
+    )
+
+    lifecycle_manager_localization = Node(
+        package="nav2_lifecycle_manager",
+        executable="lifecycle_manager",
+        name="lifecycle_manager_localization",
+        output="screen",
+        parameters=[
+            {"use_sim_time": False},
+            {"autostart": True},
+            {"node_names": ["map_server"]},
+        ],
     )
 
     # 3. 연구자님의 Cango Master 실행
@@ -38,6 +59,8 @@ def generate_launch_description():
     )
 
     return LaunchDescription([
+        map_server_node,
+        lifecycle_manager_localization,
         nav2_stack,
         cango_master_node,
     ])

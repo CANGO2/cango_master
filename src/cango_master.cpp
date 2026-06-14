@@ -534,7 +534,11 @@ namespace cango_master
           robot_control.ang_speed = -0.5;
         }
         robot_control.side_speed = 0.9 * robot_control.ang_speed;
+
       }
+      robot_control.linear_speed *= 0.5;
+      robot_control.ang_speed *= 0.5;
+      robot_control.side_speed *= 0.5;
     }
     control_publisher->publish(robot_control);
 

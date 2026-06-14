@@ -132,7 +132,7 @@ controller_server:
     max_y: 10.0
     min_theta_velocity_threshold: 0.25     # 이보다 작은 회전속도는 controller 내부에서 0에 가깝게 취급
     min_x_velocity_threshold: 0.001        # 이보다 작은 전진속도는 0에 가깝게 취급
-    min_y_velocity_threshold: 0.5          # y축 이동은 안 쓰므로 크게 둬서 lateral 노이즈를 무시
+    min_y_velocity_threshold: 0.001        # 코너에서 아주 작은 lateral 회피 명령도 살릴 수 있게 함
 
     progress_checker_plugin: "progress_checker"
     goal_checker_plugins: ["general_goal_checker"]
@@ -165,7 +165,7 @@ controller_server:
       global_plan_overwrite_orientation: true # global path의 pose 방향을 TEB가 덮어쓸지 여부
       allow_init_with_backwards_motion: false  # 초기 궤적을 후진으로 시작하는 것을 허용할지 여부
       max_global_plan_lookahead_dist: 2.4  # TEB가 global path를 앞쪽으로 얼마나 볼지. 장애물을 더 멀리서 보고 회피
-      global_plan_viapoint_sep: 0.2        # global path에서 via-point를 뽑는 간격. 작을수록 경로선에 더 빨리 복귀
+      global_plan_viapoint_sep: 0.15       # 코너에서 global path 중앙선을 더 촘촘히 따라가게 함
       via_points_ordered: true             # via-point 순서를 global path 순서대로 유지
       global_plan_prune_distance: 1.0      # 로봇 뒤쪽 global path를 잘라내는 거리
       exact_arc_length: false              # 궤적 길이를 정확 계산할지 여부. false가 가벼움
@@ -175,10 +175,10 @@ controller_server:
 
       max_vel_x: 0.8                       # TEB가 허용하는 최대 전진속도
       max_vel_x_backwards: 0.02            # 최대 후진속도. 거의 후진 금지에 가까움
-      max_vel_y: 0.0                       # y축 속도. diff/ackermann처럼 옆이동 없으면 0
+      max_vel_y: 0.2                       # Go2 lateral 이동을 조금 허용해 코너에서 중앙 유지/회피 여유 확보
       max_vel_theta: 0.8                   # 최대 회전속도
       acc_lim_x: 0.25                      # 전진 가속도 제한
-      acc_lim_y: 0.0                       # y축 가속도 제한
+      acc_lim_y: 0.2                       # lateral 이동을 급하지 않게 제한
       acc_lim_theta: 0.45                  # 회전 가속도 제한
 
       footprint_model:
@@ -213,7 +213,7 @@ controller_server:
       weight_shortest_path: 0.0            # 짧은 경로 선호 비용
       weight_obstacle: 25.0                # 장애물 회피 비용. 회피는 유지하되 과도한 선회 완화
       weight_inflation: 3.0                # inflation 영역 비용. 장애물 주변 비용을 조금 더 일찍 반영
-      weight_viapoint: 25.0                # global path via-point 추종 비용. 장애물 회피 여유를 위해 완화
+      weight_viapoint: 35.0                # 코너에서 중앙 경로를 더 강하게 따르도록 상향
       weight_adapt_factor: 2.0             # 반복 최적화 때 weight를 키우는 비율
 
       enable_homotopy_class_planning: false # 여러 우회 경로 후보를 동시에 탐색할지. false가 안정/가벼움
