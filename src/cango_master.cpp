@@ -224,7 +224,9 @@ namespace cango_master
 
     if (is_moving)
     {
-      sequence_manager->check_sound_trigger(pcl_location);
+      sequence_manager->check_sound_trigger(
+          pcl_location,
+          sound_trigger_distance);
 
       if (sequence_manager->sound_trigger != 0)
       {

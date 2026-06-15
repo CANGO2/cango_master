@@ -655,9 +655,11 @@ namespace cango_master
   }
 
   void SequenceManager::check_sound_trigger(
-      const Point &current_location)
+      const Point &current_location,
+      double hall_trigger_radius)
   {
     int detected_trigger = 0;
+    const double goal_reached_radius = 0.5;
 
     for (size_t i = 0; i < path_list.size(); ++i)
     {
@@ -667,7 +669,7 @@ namespace cango_master
 
       if (i == path_list.size() - 1)
       {
-        if (dist < 0.5)
+        if (dist < goal_reached_radius)
         {
           detected_trigger = 3; //도착
         }
@@ -675,7 +677,8 @@ namespace cango_master
         {
           detected_trigger = 2; //목적지 부근
         }
-      }    }
+      }
+    }
 
     if (detected_trigger == 0)
     {
@@ -685,7 +688,7 @@ namespace cango_master
             current_location.x - pt.x,
             current_location.y - pt.y);
 
-        if (dist < 0.5)
+        if (dist < hall_trigger_radius)
         {
           detected_trigger = 1;
           break;

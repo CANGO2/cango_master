@@ -26,7 +26,7 @@ nodes:
   hall_공터_center: [-18.7, 8.26] #공터 중심점
 
   # ===== 복도 교차점 =====
-  hall_left_top: [-16.09, 0.39] #공터교챠
+  hall_left_top: [-17.09, 0.39] #공터교챠
   hall_left_mid: [-8.26, 0.30] # 화장실교챠
   hall_left_bottom: [0.75, 0.41] # 엘베교챠
 

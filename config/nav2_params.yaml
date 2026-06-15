@@ -213,7 +213,7 @@ controller_server:
       weight_shortest_path: 0.0            # 짧은 경로 선호 비용
       weight_obstacle: 25.0                # 장애물 회피 비용. 회피는 유지하되 과도한 선회 완화
       weight_inflation: 3.0                # inflation 영역 비용. 장애물 주변 비용을 조금 더 일찍 반영
-      weight_viapoint: 25.0                # global path via-point 추종 비용. 장애물 회피 여유를 위해 완화
+      weight_viapoint: 35.0        # global path via-point 추종 비용. 장애물 회피 여유를 위해 완화
       weight_adapt_factor: 2.0             # 반복 최적화 때 weight를 키우는 비율
 
       enable_homotopy_class_planning: false # 여러 우회 경로 후보를 동시에 탐색할지. false가 안정/가벼움
@@ -329,8 +329,8 @@ global_costmap:
 
       inflation_layer:
         plugin: "nav2_costmap_2d::InflationLayer"
-        cost_scaling_factor: 2.0
-        inflation_radius: 0.80
+        cost_scaling_factor: 1.0
+        inflation_radius: 1.20
       always_send_full_costmap: True
 
 map_server:
@@ -354,10 +354,18 @@ planner_server:
     use_sim_time: false
     planner_plugins: ["GridBased"]
     GridBased:
-      plugin: "nav2_navfn_planner/NavfnPlanner"
+      plugin: "nav2_smac_planner/SmacPlanner2D"
       tolerance: 0.5
       use_astar: false
       allow_unknown: true
+      downsample_costmap: false
+      downsampling_factor: 1
+      max_iterations: 1000000
+      max_on_approach_iterations: 1000
+      max_planning_time: 2.0
+      cost_travel_multiplier: 5.0
+      use_final_approach_orientation: false
+      smooth_path: true
 
 # smoother_server:
 #   ros__parameters:

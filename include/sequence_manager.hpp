@@ -59,7 +59,9 @@ public:
   geometry_msgs::msg::Twist update_pure_pursuit_cmd(
       const Point &current_location);
 
-  void check_sound_trigger(const Point &current_location);
+  void check_sound_trigger(
+      const Point &current_location,
+      double hall_trigger_radius);
 
   std::vector<Point> path_list;
 
