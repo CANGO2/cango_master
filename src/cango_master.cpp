@@ -221,17 +221,16 @@ namespace cango_master
         RCLCPP_ERROR(this->get_logger(), "Failed to start path tracking.");
       }
     }
-
-    if (is_moving)
+    if (motor_enable)
     {
       sequence_manager->check_sound_trigger(
           pcl_location,
           sound_trigger_distance);
 
-      if (sequence_manager->sound_trigger != 0)
-      {
+      // if (sequence_manager->sound_trigger != 0)
+      // {
         sound_pub();
-      }
+      // }
     }
   }
 
@@ -476,10 +475,16 @@ namespace cango_master
               side_speed = nav2_side * scale;
               angular_speed = nav2_angular * scale;
 
-              if (nav2_linear < 0.0)
+              const double linear_deadband = 1e-3;
+
+              if (nav2_linear < -linear_deadband)
               {
                 linear_speed =
                     std::max(nav2_linear, -0.02);
+              }
+              else if (std::fabs(nav2_linear) < linear_deadband)
+              {
+                linear_speed = 0.0;
               }
             }
           }
@@ -540,7 +545,15 @@ namespace cango_master
       }
       robot_control.linear_speed *= 0.5;
       robot_control.ang_speed *= 0.5;
-      robot_control.side_speed *= 0.5;
+      robot_control.side_speed *= 0.6;
+
+      const double min_turn_command = 0.3;
+      if (std::fabs(robot_control.ang_speed) > 1e-3 &&
+          std::fabs(robot_control.ang_speed) < min_turn_command)
+      {
+        robot_control.ang_speed =
+            std::copysign(min_turn_command, robot_control.ang_speed);
+      }
     }
     control_publisher->publish(robot_control);
 

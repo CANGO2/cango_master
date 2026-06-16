@@ -659,8 +659,23 @@ namespace cango_master
       double hall_trigger_radius)
   {
     int detected_trigger = 0;
-    const double goal_reached_radius = 0.5;
+    const double goal_reached_radius = 0.8;
 
+      int hall_trigger_count = 11;
+      for (const auto &pt : hall_trigger_points_)
+      {
+        double dist = std::hypot(
+            current_location.x - pt.x,
+            current_location.y - pt.y);
+
+        if (dist < hall_trigger_radius)
+        {
+          detected_trigger = hall_trigger_count; //홀 트리거
+          break;
+        }
+        hall_trigger_count++;
+      }
+        
     for (size_t i = 0; i < path_list.size(); ++i)
     {
       double dist = std::hypot(
@@ -676,22 +691,6 @@ namespace cango_master
         else if (dist < 5.0)
         {
           detected_trigger = 2; //목적지 부근
-        }
-      }
-    }
-
-    if (detected_trigger == 0)
-    {
-      for (const auto &pt : hall_trigger_points_)
-      {
-        double dist = std::hypot(
-            current_location.x - pt.x,
-            current_location.y - pt.y);
-
-        if (dist < hall_trigger_radius)
-        {
-          detected_trigger = 1;
-          break;
         }
       }
     }
